@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>POSTECSA — Gestión de Mantenimiento</title>
+  <style>
+    /* ===== TOKENS DE DISEÑO ===== */
+    :root {
+      --bg:        #0B1520;
+      --surface:   #152236;
+      --surface2:  #1C2E45;
+      --border:    #253D58;
+      --accent:    #E8630A;
+      --accent-dk: #C4520A;
+      --text:      #E2E8F0;
+      --muted:     #8FA3BC;
+      --green:     #22C55E;
+      --red:       #EF4444;
+      --amber:     #F59E0B;
+      --radius:    6px;
+      --shadow:    0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 14px;
+      padding-bottom: 72px;
+      padding-top: 62px;
+      -webkit-tap-highlight-color: transparent;
+      line-height: 1.5;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; height: 56px;
+      background: var(--surface);
+      border-bottom: 2px solid var(--accent);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; z-index: 1000;
+      box-shadow: var(--shadow);
+    }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .logo-mark {
+      width: 32px; height: 32px; background: var(--accent);
+      border-radius: 4px; display: flex; align-items: center;
+      justify-content: center; font-weight: 900; font-size: 13px;
+      color: white; letter-spacing: -1px; flex-shrink: 0;
+    }
+    header h1 {
+      font-size: 14px; color: var(--text); font-weight: 700;
+      letter-spacing: 0.5px; line-height: 1.2;
+    }
+    header h1 span { display: block; font-size: 10px; color: var(--muted); font-weight: 400; }
+    #connection-badge {
+      font-size: 10px; padding: 3px 9px; border-radius: 10px;
+      background: var(--green); color: #fff; font-weight: 700;
+      letter-spacing: 0.5px; transition: background 0.3s;
+    }
+    #connection-badge.offline { background: var(--red); }
+
+    /* ===== BARRA DE PROGRESO ===== */
+    #pbar-container {
+      position: fixed; top: 56px; left: 0; right: 0;
+      height: 3px; background: var(--surface2); z-index: 999;
+    }
+    #pbar {
+      height: 100%; background: var(--accent);
+      transition: width 0.35s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ===== INDICADOR DE PASO ===== */
+    #step-dots {
+      position: fixed; top: 59px; left: 0; right: 0;
+      display: flex; justify-content: center; align-items: center;
+      gap: 6px; padding: 6px 0;
+      background: var(--bg); z-index: 998;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border); transition: all 0.3s;
+    }
+    .dot.active { background: var(--accent); transform: scale(1.3); }
+    .dot.done   { background: var(--green); }
+    body { padding-top: 86px; }
+
+    /* ===== CONTENEDOR Y PANELES ===== */
+    #cnt { padding: 14px; max-width: 600px; margin: 0 auto; }
+    .panel { display: none; }
+    .panel.on { display: block; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: var(--surface); border-radius: var(--radius);
+      padding: 16px; margin-bottom: 14px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .card-title {
+      font-size: 11px; font-weight: 700; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 1.2px;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .card-title .step-num {
+      background: var(--accent); color: #fff;
+      width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; flex-shrink: 0;
+    }
+
+    /* ===== FORMULARIO ===== */
+    .f-group { margin-bottom: 13px; }
+    .f-group:last-child { margin-bottom: 0; }
+    .f-group label {
+      display: block; font-size: 11px; color: var(--muted);
+      margin-bottom: 5px; font-weight: 600; letter-spacing: 0.3px;
+    }
+    .f-control {
+      width: 100%; background: var(--bg);
+      border: 1px solid var(--border); color: var(--text);
+      padding: 10px 12px; border-radius: var(--radius);
+      font-size: 14px; outline: none; transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .f-control:focus { border-color: var(--accent); }
+    .f-control[disabled] { background: var(--surface2); color: var(--muted); cursor: default; }
+    textarea.f-control { resize: vertical; min-height: 72px; }
+
+    /* ===== BOTONES ===== */
+    .btn {
+      background: var(--accent); color: #fff; border: none;
+      padding: 10px 16px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 7px; transition: background 0.15s, transform 0.1s;
+      font-family: inherit; line-height: 1;
+    }
+    .btn:active { background: var(--accent-dk); transform: scale(0.97); }
+    .btn-sec   { background: var(--surface2); }
+    .btn-sec:active { background: var(--border); }
+    .btn-green { background: var(--green); }
+    .btn-red   { background: var(--red); }
+    .btn-block { width: 100%; }
+    .btn-sm    { padding: 6px 10px; font-size: 11px; }
+
+    /* ===== INFO BOXES ===== */
+    .info-box {
+      background: var(--bg); padding: 10px 12px;
+      border-radius: var(--radius); border: 1px solid var(--border);
+      margin-top: 9px; font-size: 13px;
+    }
+    .info-box.highlight { border-color: var(--accent); }
+    .info-line {
+      display: flex; justify-content: space-between;
+      align-items: baseline; margin-bottom: 5px;
+    }
+    .info-line:last-child { margin-bottom: 0; }
+    .info-line .lbl { color: var(--muted); font-size: 12px; }
+    .info-line .val { font-weight: 600; font-size: 13px; text-align: right; max-width: 65%; }
+
+    /* ===== ASSET HISTORY ===== */
+    .hist-row {
+      padding: 5px 0 5px 9px;
+      border-left: 2px solid var(--border);
+      margin-bottom: 4px; font-size: 12px; color: var(--muted);
+    }
+    .hist-row:last-child { margin-bottom: 0; }
+
+    /* ===== BOTONES VOZ ===== */
+    .v-wrapper { position: relative; display: flex; align-items: stretch; }
+    .v-wrapper textarea { border-top-right-radius: 0; border-bottom-right-radius: 0; flex: 1; }
+    .v-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-left: none; color: var(--text); width: 44px;
+      border-top-right-radius: var(--radius); border-bottom-right-radius: var(--radius);
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 17px; flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .v-btn.rec { background: var(--red); animation: pulse 1.2s infinite; }
+    .v-rec-indicator {
+      font-size: 11px; color: var(--red); margin-top: 4px;
+      display: none; font-weight: 700;
+    }
+
+    /* ===== CHECKLIST ===== */
+    .chk-item {
+      padding: 13px 0; border-bottom: 1px solid var(--border);
+    }
+    .chk-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .chk-label { font-size: 13px; margin-bottom: 9px; line-height: 1.4; }
+    .chk-btns { display: flex; gap: 7px; }
+    .btn-chk {
+      flex: 1; background: var(--surface2); color: var(--muted);
+      border: 1px solid var(--border); padding: 7px 4px;
+      font-size: 11px; font-weight: 700; border-radius: 4px;
+      cursor: pointer; transition: all 0.15s; text-align: center;
+    }
+    .btn-chk.is-c  { background: var(--green); color: #fff; border-color: var(--green); }
+    .btn-chk.is-nc { background: var(--red);   color: #fff; border-color: var(--red); }
+    .btn-chk.is-na { background: #4A5568;       color: #fff; border-color: #4A5568; }
+    .nc-detail { display: none; margin-top: 9px; }
+
+    /* ===== FOTOS ===== */
+    .img-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; margin-top: 12px;
+    }
+    .thumb-wrap {
+      position: relative; aspect-ratio: 1;
+      border-radius: 4px; overflow: hidden;
+      background: var(--bg); border: 1px solid var(--border);
+    }
+    .thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb-del {
+      position: absolute; top: 3px; right: 3px;
+      background: rgba(239,68,68,0.9); color: #fff;
+      border: none; width: 22px; height: 22px; border-radius: 50%;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .upload-btn-row { display: flex; gap: 8px; }
+    .upload-btn-row .btn { flex: 1; }
+
+    /* ===== TABLA REPUESTOS ===== */
+    .tbl-wrap { overflow-x: auto; margin-top: 10px; border-radius: var(--radius); border: 1px solid var(--border); }
+    .tbl-rsp { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 260px; }
+    .tbl-rsp th {
+      background: var(--bg); text-align: left;
+      padding: 8px 10px; color: var(--muted);
+      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tbl-rsp td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .tbl-rsp tr:last-child td { border-bottom: none; }
+    .tbl-rsp tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .add-rep-row { display: grid; grid-template-columns: 1fr 80px 44px; gap: 6px; margin-bottom: 10px; }
+    .add-rep-row .btn { padding: 10px; }
+
+    /* ===== CANVAS FIRMA ===== */
+    .sig-wrap { background: #fff; border-radius: var(--radius); border: 2px solid var(--border); overflow: hidden; margin-top: 7px; }
+    .sig-canvas { display: block; width: 100%; height: 120px; touch-action: none; cursor: crosshair; }
+    .sig-meta { font-size: 11px; color: var(--muted); text-align: center; padding: 4px; background: var(--bg); }
+
+    /* ===== BADGE DE CRITICIDAD ===== */
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 3px;
+      font-size: 11px; font-weight: 700;
+    }
+    .badge-red  { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid var(--red); }
+    .badge-amb  { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid var(--amber); }
+    .badge-grn  { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid var(--green); }
+
+    /* ===== PANTALLA ÉXITO ===== */
+    .success-wrap { text-align: center; padding: 32px 16px; }
+    .success-icon {
+      width: 72px; height: 72px; background: rgba(34,197,94,0.15);
+      border: 2px solid var(--green); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; margin: 0 auto 18px;
+    }
+    .success-wrap h2 {
+      font-size: 18px; margin-bottom: 6px; color: var(--green);
+      border: none; padding: 0;
+    }
+    .success-wrap p { color: var(--muted); font-size: 13px; margin-bottom: 22px; }
+    .ot-pill {
+      display: inline-block; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 5px 14px; border-radius: 20px;
+      font-size: 12px; font-weight: 700; margin-bottom: 22px; letter-spacing: 1px;
+    }
+
+    /* ===== NAV INFERIOR ===== */
+    nav {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 62px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0 16px; z-index: 1000;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.3);
+    }
+    #step-lbl { font-size: 12px; font-weight: 700; color: var(--muted); }
+    #bbk, #baf { min-width: 100px; }
+
+    /* ===== ANIMACIONES ===== */
+    @keyframes pulse {
+      0%   { opacity: 1; }
+      50%  { opacity: 0.35; }
+      100% { opacity: 1; }
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 380px) {
+      .btn { font-size: 12px; padding: 9px 12px; }
+      .chk-btns { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <div class="logo-mark">PS</div>
+      <h1>POSTECSA <span>Gestión de Mantenimiento Industrial</span></h1>
+    </div>
+    <div id="connection-badge">ONLINE</div>
+  </header>
+
+  <div id="pbar-container"><div id="pbar"></div></div>
+
+  <div id="step-dots">
+    <div class="dot active" data-step="1"></div>
+    <div class="dot" data-step="2"></div>
+    <div class="dot" data-step="3"></div>
+    <div class="dot" data-step="4"></div>
+    <div class="dot" data-step="5"></div>
+  </div>
+
+  <div id="cnt">
+    <form id="main-form" onsubmit="return false;">
+
+      <!-- ===== PASO 1: INFORMACIÓN GENERAL ===== -->
+      <div id="p1" class="panel on">
+        <div class="card">
+          <div class="card-title"><span class="step-num">1</span>Información General</div>
+
+          <div class="f-group">
+            <label>ID Orden de Trabajo</label>
+            <input type="text" id="otid" class="f-control" placeholder="Autogenerado — editable">
+          </div>
+          <div class="f-group">
+            <label>Fecha y Hora de Apertura</label>
+            <input type="text" id="fecha-ap" class="f-control" disabled>
+          </div>
+          <div class="f-group">
+            <label>Técnico Encargado <span style="color:var(--red)">*</span></label>
+            <select id="tecnico-sel" class="f-control">
+              <option value="">— Seleccione técnico —</option>
+              <option value="T1" data-cc="CC 79.432.119" data-cargo="Especialista Hidráulico">Carlos Mendoza</option>
+              <option value="T2" data-cc="CC 16.785.432" data-cargo="Técnico de Planta">Juan José Moreno</option>
+              <option value="T3" data-cc="CC 94.302.881" data-cargo="Inspector Electromecánico">Andrés Felipe Tobar</option>
+            </select>
+            <div id="tecnico-meta" class="info-box" style="display:none;"></div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div class="f-group" style="margin-bottom:0;">
+              <label>Tipo de Mantenimiento</label>
+              <select id="maint-type" class="f-control">
+                <option value="Preventivo">Preventivo</option>
+                <option value="Correctivo">Correctivo</option>
+                <option value="Predictivo">Predictivo</option>
+              </select>
+            </div>
+            <div class="f-group" style="margin-bottom:0;">
+              <label>Prioridad</label>
+              <select id="priority-sel" class="f-control">
+                <option value="Baja">Baja</option>
+                <option value="Media">Media</option>
+                <option value="Alta">Alta</option>
+                <option value="Crítica">Crítica</option>
+              </select>
+            </div>
+          </div>
+          <div class="f-group" style="margin-top:13px;">
+            <label>Área de Operación <span style="color:var(--red)">*</span></label>
+            <input type="text" id="area-txt" class="f-control" placeholder="Ej: Planta de Inyección, Bloque C">
+          </div>
+          <div class="f-group">
+            <label>Coordenadas GPS <span style="font-weight:400;color:var(--muted);">(automáticas o ingrese manualmente)</span></label>
+            <input type="text" id="gps-txt" class="f-control" value="Obteniendo ubicación..." placeholder="Lat, Lon o descripción de ubicación">
+          </div>
+          <div class="f-group">
+            <label>Estado Inicial Reportado</label>
+            <div class="v-wrapper">
+              <textarea id="desc-inicial" class="f-control" placeholder="Detalle el estado inicial del equipo..."></textarea>
+              <button type="button" class="v-btn" data-target="desc-inicial" title="Asistente de redacción IA">✦</button>
+            </div>
+            <div id="vr-desc-inicial" class="v-rec-indicator">● Grabando... hable ahora</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PASO 2: ACTIVO ===== -->
+      <div id="p2" class="panel">
+        <div class="card">
+          <div class="card-title"><span class="step-num">2</span>Identificación del Activo</div>
+
+          <div class="f-group">
+            <label>Código o Serial del Activo <span style="color:var(--red)">*</span></label>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="asset-id" class="f-control" placeholder="Ej: COMP-04, TOR-01, EXT-12"
+                     style="border-top-right-radius:0; border-bottom-right-radius:0;">
+              <button type="button" id="btn-search-asset" class="btn" style="flex-shrink:0;">Buscar</button>
+            </div>
+          </div>
+
+          <div id="asset-card" style="display:none;">
+            <div class="info-box highlight">
+              <div class="info-line">
+                <span class="lbl">Equipo</span>
+                <span class="val" id="ast-nom">—</span>
+              </div>
+              <div class="info-line">
+                <span class="lbl">Criticidad</span>
+                <span class="val" id="ast-crit-wrap"><span id="ast-crit" class="badge">—</span></span>
+              </div>
+              <div class="info-line">
+                <span class="lbl">Módulo</span>
+                <span class="val" id="ast-ubc">—</span>
+              </div>
+            </div>
+            <div class="info-box" style="margin-top:8px;">
+              <div style="font-size:11px; font-weight:700; color:var(--accent); margin-bottom:8px; letter-spacing:0.8px;">
+                HISTORIAL DE INTERVENCIONES (últimas 3)
+              </div>
+              <div id="ast-hist"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PASO 3: CHECKLIST ===== -->
+      <div id="p3" class="panel">
+        <div class="card">
+          <div class="card-title" id="chk-title"><span class="step-num">3</span>Lista de Verificación</div>
+          <div id="checklist-container"></div>
+        </div>
+      </div>
+
+      <!-- ===== PASO 4: EVIDENCIA Y MATERIALES ===== -->
+      <div id="p4" class="panel">
+        <div class="card">
+          <div class="card-title"><span class="step-num">4</span>Evidencia Fotográfica — Antes</div>
+          <div class="upload-btn-row">
+            <button type="button" id="trigger-ca" class="btn btn-sec">📸 Cámara</button>
+            <button type="button" id="trigger-ga" class="btn btn-sec">📁 Galería</button>
+          </div>
+          <div id="preview-antes" class="img-grid"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="step-num">4</span>Evidencia Fotográfica — Después</div>
+          <div class="upload-btn-row">
+            <button type="button" id="trigger-cd" class="btn btn-sec">📸 Cámara</button>
+            <button type="button" id="trigger-gd" class="btn btn-sec">📁 Galería</button>
+          </div>
+          <div id="preview-despues" class="img-grid"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Observaciones de Entrega</div>
+          <div class="v-wrapper">
+            <textarea id="desc-entrega" class="f-control" placeholder="Describa los trabajos realizados y notas de entrega..."></textarea>
+            <button type="button" class="v-btn" data-target="desc-entrega" title="Asistente de redacción IA">✦</button>
+          </div>
+          <div id="vr-desc-entrega" class="v-rec-indicator">● Grabando... hable ahora</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Materiales y Repuestos Utilizados</div>
+          <div class="add-rep-row">
+            <input type="text" id="rep-nom" class="f-control" placeholder="Descripción del componente">
+            <input type="number" id="rep-cant" class="f-control" placeholder="Cant." min="1">
+            <button type="button" id="btn-add-rep" class="btn btn-green">+</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl-rsp" id="table-repuestos">
+              <thead>
+                <tr>
+                  <th>Componente / Material</th>
+                  <th style="width:60px; text-align:center;">Cant.</th>
+                  <th style="width:70px; text-align:center;">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-repuestos">
+                <tr id="rep-empty-row">
+                  <td colspan="3" style="color:var(--muted); font-size:12px; text-align:center; padding:14px;">
+                    Sin repuestos registrados
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PASO 5: CIERRE Y FIRMAS ===== -->
+      <div id="p5" class="panel">
+        <div class="card">
+          <div class="card-title"><span class="step-num">5</span>Diagnóstico de Cierre</div>
+          <div class="f-group">
+            <label>Estado Final de Operación</label>
+            <select id="estado-cierre-sel" class="f-control">
+              <option value="Operativo 100%">✅ Operativo al 100% — Completamente funcional</option>
+              <option value="Operativo con Restricciones">⚠️ Operativo con Restricciones</option>
+              <option value="Fuera de Servicio">🔴 Fuera de Servicio — Parada crítica</option>
+            </select>
+          </div>
+          <div class="f-group">
+            <label>Informe Detallado de Intervención</label>
+            <div class="v-wrapper">
+              <textarea id="desc-cierre" class="f-control" placeholder="Conclusiones técnicas definitivas de la intervención..."></textarea>
+              <button type="button" class="v-btn" data-target="desc-cierre" title="Asistente de redacción IA">✦</button>
+            </div>
+            <div id="vr-desc-cierre" class="v-rec-indicator">● Grabando... hable ahora</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Firmas de Conformidad</div>
+          <div class="f-group">
+            <label>Firma del Técnico Responsable</label>
+            <div class="sig-wrap">
+              <canvas id="canvas-tecnico" class="sig-canvas" width="560" height="120"></canvas>
+            </div>
+            <div class="sig-meta">Firme dentro del recuadro</div>
+            <button type="button" id="clear-sig-tec" class="btn btn-sec btn-sm btn-block" style="margin-top:5px;">
+              Limpiar firma
+            </button>
+          </div>
+          <div class="f-group" style="margin-top:16px;">
+            <label>Nombre y Cargo del Supervisor / Autorizador</label>
+            <input type="text" id="supervisor-nom" class="f-control" placeholder="Nombre completo del validador">
+          </div>
+          <div class="f-group">
+            <label>Firma de Recepción — Supervisor</label>
+            <div class="sig-wrap">
+              <canvas id="canvas-supervisor" class="sig-canvas" width="560" height="120"></canvas>
+            </div>
+            <div class="sig-meta">Firme dentro del recuadro</div>
+            <button type="button" id="clear-sig-sup" class="btn btn-sec btn-sm btn-block" style="margin-top:5px;">
+              Limpiar firma
+            </button>
+          </div>
+          <div style="margin-top:20px;">
+            <button type="button" id="btn-finalizar-ot" class="btn btn-green btn-block" style="padding:14px; font-size:15px;">
+              ✓ CONCLUIR Y GUARDAR ORDEN
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ÉXITO ===== -->
+      <div id="p-success" class="panel">
+        <div class="card">
+          <div class="success-wrap">
+            <div class="success-icon">✓</div>
+            <h2>¡Orden Procesada!</h2>
+            <p>Los datos han quedado resguardados localmente de forma segura.</p>
+            <div class="ot-pill" id="success-ot-num"></div>
+            <button type="button" id="btn-pdf" class="btn btn-block" style="padding:13px; font-size:14px; margin-bottom:10px;">
+              📄 Generar Reporte PDF Oficial
+            </button>
+            <button type="button" id="btn-reiniciar" class="btn btn-sec btn-block" style="font-size:13px;">
+              Nueva Ficha de Mantenimiento
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <nav id="nav-bar">
+    <button type="button" id="bbk" class="btn btn-sec" style="display:none;">← Atrás</button>
+    <span id="step-lbl">PASO 1 / 5</span>
+    <button type="button" id="baf" class="btn">Siguiente →</button>
+  </nav>
+
+  <!-- Inputs de archivo ocultos -->
+  <input type="file" id="fc-an" accept="image/*" capture="environment" multiple style="display:none;position:absolute;opacity:0;">
+  <input type="file" id="fg-an" accept="image/*" multiple style="display:none;position:absolute;opacity:0;">
+  <input type="file" id="fc-de" accept="image/*" capture="environment" multiple style="display:none;position:absolute;opacity:0;">
+  <input type="file" id="fg-de" accept="image/*" multiple style="display:none;position:absolute;opacity:0;">
+
+<script>
+// =============================================
+// POSTECSA — SISTEMA DE GESTIÓN DE MANTENIMIENTO
+// Versión 2.0 — Corregida y Optimizada
+// =============================================
+
+// ---- ESTADO GLOBAL ----
+var step         = 1;
+var TOTAL_STEPS  = 5;
+var repuestosList = [];
+var fotosAntes   = [];
+var fotosDespues = [];
+var currentVoiceTarget = null;
+var recognition  = null;
+var speechActive = false;
+
+// ---- BASE DE DATOS LOCAL DE ACTIVOS ----
+var DB_ACTIVOS = {
+  "COMP-04": {
+    nom: "Compresor de Aire de Tornillo Kaeser 50HP",
+    crit: "ALTA",
+    h: ["12/04/2026 – Cambio de filtros de aceite", "02/02/2026 – Purga de tanque pulmón", "15/11/2025 – Inspección de fajas"]
+  },
+  "TOR-01": {
+    nom: "Torno Mecánico Paralelo Pinacho Smart",
+    crit: "MEDIA",
+    h: ["03/05/2026 – Nivelación de bancada", "20/01/2026 – Lubricación de guías principales", "08/10/2025 – Cambio de pastillas eléctricas"]
+  },
+  "EXT-12": {
+    nom: "Extractor Axial Industrial Centrífugo Trifásico",
+    crit: "CRÍTICA",
+    h: ["18/05/2026 – Balanceo dinámico de álabes", "14/03/2026 – Cambio de rodamientos SKF", "05/12/2025 – Ajuste de guardamotor"]
+  },
+  "QFT-01": {
+    nom: "Máquina QFT — Vibro-compactadora de Bloques",
+    crit: "CRÍTICA",
+    h: ["10/05/2026 – Ajuste de vibrador hidráulico", "22/03/2026 – Revisión de moldes y pisones", "14/01/2026 – Lubricación de rodamientos vibradores"]
+  },
+  "MAM-01": {
+    nom: "Máquina Amarilla — Centrifugadora de Postes",
+    crit: "ALTA",
+    h: ["05/05/2026 – Revisión de sistema de giro", "18/02/2026 – Cambio de sellos de molde", "07/11/2025 – Calibración de velocidad de centrifugado"]
+  }
+};
+
+// ---- HELPER ----
+function G(id) { return document.getElementById(id); }
+
+function formatDate(d) {
+  var dd   = d.getDate();
+  var mm   = d.getMonth() + 1;
+  var yyyy = d.getFullYear();
+  var hh   = d.getHours();
+  var min  = d.getMinutes();
+  return (dd < 10 ? '0' : '') + dd + '/' +
+         (mm < 10 ? '0' : '') + mm + '/' + yyyy + ' — ' +
+         (hh < 10 ? '0' : '') + hh + ':' +
+         (min < 10 ? '0' : '') + min;
+}
+
+// =============================================
+// INICIALIZACIÓN
+// =============================================
+window.addEventListener('load', function() {
+  initGeneralData();
+  initGPS();
+  initNavigation();
+  initAssetSearch();
+  initSpeech();
+  initFileInputs();
+  initRepuestos();
+  initCanvasSignatures();
+  initNetworkMonitor();
+  renderChecklist();
+  updNav();
+  updDots();
+});
+
+// ---- 1. DATOS GENERALES ----
+function initGeneralData() {
+  var otField = G('otid');
+  if (otField) {
+    otField.value = 'OT-' + Math.floor(100000 + Math.random() * 900000);
+  }
+
+  var fechaField = G('fecha-ap');
+  if (fechaField) {
+    fechaField.value = formatDate(new Date());
+  }
+
+  var tecSel = G('tecnico-sel');
+  if (tecSel) {
+    tecSel.addEventListener('change', function() {
+      var meta = G('tecnico-meta');
+      if (!meta) return;
+      if (!this.value) {
+        meta.style.display = 'none';
+        return;
+      }
+      var opt = this.options[this.selectedIndex];
+      meta.innerHTML =
+        '<div class="info-line"><span class="lbl">Cédula</span><span class="val">' + opt.getAttribute('data-cc') + '</span></div>' +
+        '<div class="info-line"><span class="lbl">Especialidad</span><span class="val">' + opt.getAttribute('data-cargo') + '</span></div>';
+      meta.style.display = 'block';
+    });
+  }
+
+  var maintType = G('maint-type');
+  if (maintType) {
+    maintType.addEventListener('change', renderChecklist);
+  }
+}
+
+// ---- 2. GPS ----
+// Estrategia en cascada:
+//   1. navigator.geolocation  → preciso, requiere HTTPS y permiso del usuario
+//   2. ipapi.co               → aproximado por IP, funciona en iframes, no requiere permiso
+//   3. Campo editable manual  → fallback siempre disponible
+function initGPS() {
+  var gpsField = G('gps-txt');
+  if (!gpsField) return;
+
+  gpsField.value = 'Obteniendo ubicación...';
+
+  function setGPSValue(val) {
+    if (gpsField) gpsField.value = val;
+  }
+
+  // Fallback 2: geolocalización aproximada por IP (funciona en iframe y sin permisos)
+  function geoByIP() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://ipapi.co/json/', true);
+    xhr.timeout = 6000;
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        try {
+          var data = JSON.parse(xhr.responseText);
+          if (data.latitude && data.longitude) {
+            setGPSValue(
+              data.latitude.toFixed(4) + ', ' + data.longitude.toFixed(4) +
+              ' (aprox. por red — ' + (data.city || '') + ', ' + (data.region || '') + ')'
+            );
+            return;
+          }
+        } catch (e) {}
+      }
+      setGPSValue('Ubicación no disponible — ingrese manualmente');
+    };
+    xhr.onerror   = function() { setGPSValue('Sin red — ingrese coordenadas manualmente'); };
+    xhr.ontimeout = function() { setGPSValue('Tiempo agotado — ingrese coordenadas manualmente'); };
+    xhr.send();
+  }
+
+  // Intento 1: GPS nativo del dispositivo (alta precisión)
+  if (navigator.geolocation) {
+    var done = false;
+    var fallbackTimer = setTimeout(function() {
+      if (!done) { done = true; geoByIP(); }
+    }, 7000); // si en 7s no responde, usar IP
+
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        if (done) return;
+        done = true;
+        clearTimeout(fallbackTimer);
+        setGPSValue(
+          pos.coords.latitude.toFixed(6) + ', ' +
+          pos.coords.longitude.toFixed(6) +
+          ' (±' + Math.round(pos.coords.accuracy) + 'm)'
+        );
+      },
+      function() {
+        if (done) return;
+        done = true;
+        clearTimeout(fallbackTimer);
+        geoByIP(); // GPS falló → intentar por IP
+      },
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+    );
+  } else {
+    geoByIP(); // Sin API de geolocalización → ir directo a IP
+  }
+}
+
+// =============================================
+// NAVEGACIÓN POR PASOS
+// =============================================
+function initNavigation() {
+  var btnBack = G('bbk');
+  var btnNext = G('baf');
+  if (btnBack) btnBack.addEventListener('click', function() { goStep(-1); });
+  if (btnNext) btnNext.addEventListener('click', function() { goStep(1); });
+}
+
+function goStep(dir) {
+  var next = step + dir;
+  if (next < 1 || next > TOTAL_STEPS) return;
+  if (dir > 0 && !validateStep()) return;
+
+  var cur = G('p' + step);
+  var nxt = G('p' + next);
+  if (cur) cur.classList.remove('on');
+  if (nxt) nxt.classList.add('on');
+
+  step = next;
+  updNav();
+  updDots();
+  window.scrollTo(0, 0);
+}
+
+function validateStep() {
+  if (step === 1) {
+    var tec  = G('tecnico-sel') ? G('tecnico-sel').value : '';
+    var area = G('area-txt')   ? G('area-txt').value.trim() : '';
+    if (!tec || !area) {
+      alert('Atención: El Técnico Encargado y el Área de Operación son obligatorios.');
+      return false;
+    }
+  }
+  if (step === 2) {
+    var assetVal = G('asset-id') ? G('asset-id').value.trim() : '';
+    if (!assetVal) {
+      alert('Atención: Debe especificar un Código o Serial del Activo.');
+      return false;
+    }
+  }
+  return true;
+}
+
+function updNav() {
+  var btnBack = G('bbk');
+  var btnNext = G('baf');
+  var lbl     = G('step-lbl');
+  var pbar    = G('pbar');
+  var navBar  = G('nav-bar');
+
+  // Ocultar nav en pantalla de éxito
+  if (step > TOTAL_STEPS) {
+    if (navBar)  navBar.style.display  = 'none';
+    if (pbar)    pbar.style.width      = '100%';
+    return;
+  }
+
+  if (navBar)  navBar.style.display  = 'flex';
+  if (btnBack) btnBack.style.display = (step === 1) ? 'none' : 'inline-flex';
+  if (lbl)     lbl.textContent       = 'PASO ' + step + ' / ' + TOTAL_STEPS;
+  if (pbar)    pbar.style.width      = (step / TOTAL_STEPS * 100) + '%';
+
+  if (btnNext) {
+    btnNext.style.display  = (step === TOTAL_STEPS) ? 'none' : 'inline-flex';
+  }
+}
+
+function updDots() {
+  var dots = document.querySelectorAll('#step-dots .dot');
+  for (var i = 0; i < dots.length; i++) {
+    var s = i + 1;
+    dots[i].classList.remove('active', 'done');
+    if (s < step)       dots[i].classList.add('done');
+    else if (s === step) dots[i].classList.add('active');
+  }
+}
+
+// =============================================
+// BÚSQUEDA DE ACTIVOS
+// =============================================
+function initAssetSearch() {
+  var btn = G('btn-search-asset');
+  if (!btn) return;
+
+  btn.addEventListener('click', function() {
+    var inputEl = G('asset-id');
+    if (!inputEl) return;
+
+    var code    = inputEl.value.trim().toUpperCase();
+    var card    = G('asset-card');
+    var nomEl   = G('ast-nom');
+    var critWrap= G('ast-crit');
+    var ubcEl   = G('ast-ubc');
+    var histEl  = G('ast-hist');
+
+    if (!card) return;
+
+    var data = DB_ACTIVOS[code];
+
+    if (data) {
+      if (nomEl)   nomEl.textContent = data.nom;
+      if (critWrap) {
+        var cls = 'badge-grn';
+        if (data.crit === 'CRÍTICA') cls = 'badge-red';
+        else if (data.crit === 'ALTA') cls = 'badge-red';
+        else if (data.crit === 'MEDIA') cls = 'badge-amb';
+        critWrap.className = 'badge ' + cls;
+        critWrap.textContent = data.crit;
+      }
+      if (ubcEl) ubcEl.textContent = 'Módulo ' + code.split('-')[0];
+      if (histEl) {
+        var hHtml = '';
+        for (var i = 0; i < data.h.length; i++) {
+          hHtml += '<div class="hist-row">' + data.h[i] + '</div>';
+        }
+        histEl.innerHTML = hHtml;
+      }
+    } else {
+      // Activo nuevo / no registrado
+      if (nomEl)   nomEl.textContent  = 'Activo registrado en campo (nuevo)';
+      if (critWrap) { critWrap.className = 'badge badge-amb'; critWrap.textContent = 'SIN ASIGNAR'; }
+      if (ubcEl)   ubcEl.textContent  = 'Pendiente de mapeo centralizado';
+      if (histEl)  histEl.innerHTML   = '<div class="hist-row">Sin historial previo (equipo nuevo).</div>';
+    }
+
+    card.style.display = 'block';
+  });
+}
+
+// =============================================
+// CHECKLIST DINÁMICO
+// =============================================
+function renderChecklist() {
+  var container = G('checklist-container');
+  var typeSel   = G('maint-type');
+  if (!container || !typeSel) return;
+
+  var type = typeSel.value;
+  var titleEl = G('chk-title');
+  if (titleEl) titleEl.innerHTML =
+    '<span class="step-num">3</span>Lista de Verificación — ' + type;
+
+  var items = [];
+  if (type === 'Correctivo') {
+    items = [
+      'Verificación estructural de daños externos o fisuras visibles',
+      'Aislamiento y etiquetado de fuentes de energía (Bloqueo LOTO)',
+      'Desmontaje del componente averiado y diagnóstico de causa raíz',
+      'Limpieza de residuos metálicos o contaminantes en cavidades internas'
+    ];
+  } else if (type === 'Predictivo') {
+    items = [
+      'Toma de lecturas termográficas infrarrojas en puntos críticos',
+      'Análisis espectral de vibraciones mecánicas (FFT)',
+      'Medición de resistencia de aislamiento y corrientes de fuga',
+      'Muestreo de lubricante para conteo de partículas por desgaste (ISO 4406)'
+    ];
+  } else {
+    items = [
+      'Inspección de niveles de aceite y estado de fluidos hidráulicos',
+      'Ajuste y torque de pernos de sujeción mecánica y anclajes estructurales',
+      'Limpieza de filtros de aire y rejillas de ventilación',
+      'Comprobación de conexiones eléctricas y ausencia de puntos calientes',
+      'Pruebas de funcionamiento del sistema de parada de emergencia (paro de seguridad)'
+    ];
+  }
+
+  var html = '';
+  for (var i = 0; i < items.length; i++) {
+    html +=
+      '<div class="chk-item">' +
+        '<div class="chk-label"><strong>' + (i + 1) + '.</strong> ' + items[i] + '</div>' +
+        '<div class="chk-btns">' +
+          '<button type="button" class="btn-chk" data-idx="' + i + '" data-val="C">✓ CONFORME</button>' +
+          '<button type="button" class="btn-chk" data-idx="' + i + '" data-val="NC">✗ NO CONFORME</button>' +
+          '<button type="button" class="btn-chk" data-idx="' + i + '" data-val="NA">N/A</button>' +
+        '</div>' +
+        '<div id="nc-box-' + i + '" class="nc-detail">' +
+          '<div class="v-wrapper">' +
+            '<textarea id="ta-nc-' + i + '" class="f-control" placeholder="Describa el hallazgo crítico observado..."></textarea>' +
+            '<button type="button" class="v-btn voice-dyn" data-target="ta-nc-' + i + '" title="Asistente IA">✦</button>' +
+          '</div>' +
+          '<div id="vr-ta-nc-' + i + '" class="v-rec-indicator">● Grabando... hable ahora</div>' +
+        '</div>' +
+      '</div>';
+  }
+  container.innerHTML = html;
+
+  // Registrar listeners post-render (sin inline handlers)
+  container.querySelectorAll('.btn-chk').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      handleChecklistClick(this);
+    });
+  });
+
+  // Registrar listeners directos en botones de voz dinámicos del checklist
+  container.querySelectorAll('.voice-dyn').forEach(function(vBtn) {
+    vBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openVoiceModal(this.getAttribute('data-target'));
+    });
+  });
+}
+
+function handleChecklistClick(btn) {
+  var idx = btn.getAttribute('data-idx');
+  var val = btn.getAttribute('data-val');
+  var row = btn.parentNode;
+
+  row.querySelectorAll('.btn-chk').forEach(function(b) {
+    b.classList.remove('is-c', 'is-nc', 'is-na');
+  });
+
+  if (val === 'C')  btn.classList.add('is-c');
+  if (val === 'NC') btn.classList.add('is-nc');
+  if (val === 'NA') btn.classList.add('is-na');
+
+  var ncBox = G('nc-box-' + idx);
+  if (ncBox) ncBox.style.display = (val === 'NC') ? 'block' : 'none';
+}
+
+// =============================================
+// MULTIMEDIA — FOTOS
+// =============================================
+function initFileInputs() {
+  var bindings = [
+    { trigger: 'trigger-ca', fileId: 'fc-an', previewId: 'preview-antes', type: 'A' },
+    { trigger: 'trigger-ga', fileId: 'fg-an', previewId: 'preview-antes', type: 'A' },
+    { trigger: 'trigger-cd', fileId: 'fc-de', previewId: 'preview-despues', type: 'D' },
+    { trigger: 'trigger-gd', fileId: 'fg-de', previewId: 'preview-despues', type: 'D' }
+  ];
+
+  for (var i = 0; i < bindings.length; i++) {
+    (function(b) {
+      var tEl = G(b.trigger);
+      var fEl = G(b.fileId);
+      if (!tEl || !fEl) return;
+
+      tEl.addEventListener('click', function() { fEl.click(); });
+
+      fEl.addEventListener('change', function() {
+        processImages(this.files, b.previewId, b.type);
+        this.value = ''; // permitir re-selección del mismo archivo
+      });
+    })(bindings[i]);
+  }
+}
+
+function processImages(files, previewId, storeType) {
+  if (!files || !files.length) return;
+
+  for (var i = 0; i < files.length; i++) {
+    (function(file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        if (storeType === 'A') fotosAntes.push(e.target.result);
+        else fotosDespues.push(e.target.result);
+        renderThumbs(previewId, storeType);
+      };
+      reader.readAsDataURL(file);
+    })(files[i]);
+  }
+}
+
+function renderThumbs(previewId, storeType) {
+  var div  = G(previewId);
+  if (!div) return;
+  div.innerHTML = '';
+
+  var list = (storeType === 'A') ? fotosAntes : fotosDespues;
+
+  for (var i = 0; i < list.length; i++) {
+    (function(idx, src) {
+      var wrap = document.createElement('div');
+      wrap.className = 'thumb-wrap';
+
+      var img = document.createElement('img');
+      img.src = src;
+      img.alt = 'Evidencia ' + (idx + 1);
+
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'thumb-del';
+      del.textContent = '×';
+      del.setAttribute('aria-label', 'Eliminar imagen');
+
+      del.addEventListener('click', function() {
+        if (storeType === 'A') fotosAntes.splice(idx, 1);
+        else fotosDespues.splice(idx, 1);
+        renderThumbs(previewId, storeType);
+      });
+
+      wrap.appendChild(img);
+      wrap.appendChild(del);
+      div.appendChild(wrap);
+    })(i, list[i]);
+  }
+}
+
+// =============================================
+// REPUESTOS
+// =============================================
+function initRepuestos() {
+  var btnAdd = G('btn-add-rep');
+  if (!btnAdd) return;
+
+  btnAdd.addEventListener('click', function() {
+    var nomEl  = G('rep-nom');
+    var cantEl = G('rep-cant');
+    if (!nomEl || !cantEl) return;
+
+    var name = nomEl.value.trim();
+    var cant = parseInt(cantEl.value, 10);
+
+    if (!name || isNaN(cant) || cant < 1) {
+      alert('Ingrese descripción válida y cantidad mayor a cero.');
+      return;
+    }
+
+    repuestosList.push({ item: name, qty: cant });
+    nomEl.value  = '';
+    cantEl.value = '';
+    renderRepuestosTable();
+  });
+}
+
+function renderRepuestosTable() {
+  var tbody = G('tbody-repuestos');
+  if (!tbody) return;
+
+  var emptyRow = G('rep-empty-row');
+
+  if (repuestosList.length === 0) {
+    tbody.innerHTML =
+      '<tr id="rep-empty-row"><td colspan="3" style="color:var(--muted);font-size:12px;text-align:center;padding:14px;">Sin repuestos registrados</td></tr>';
+    return;
+  }
+
+  // Eliminar fila vacía si existe
+  if (emptyRow) emptyRow.remove();
+
+  tbody.innerHTML = '';
+  for (var i = 0; i < repuestosList.length; i++) {
+    (function(idx, rep) {
+      var tr = document.createElement('tr');
+
+      var tdNom = document.createElement('td');
+      tdNom.textContent = rep.item;
+
+      var tdQty = document.createElement('td');
+      tdQty.textContent  = rep.qty;
+      tdQty.style.textAlign = 'center';
+
+      var tdDel = document.createElement('td');
+      tdDel.style.textAlign = 'center';
+
+      var btnDel = document.createElement('button');
+      btnDel.type      = 'button';
+      btnDel.className = 'btn btn-red btn-sm';
+      btnDel.textContent = '✕';
+      btnDel.setAttribute('aria-label', 'Eliminar ' + rep.item);
+
+      btnDel.addEventListener('click', function() {
+        repuestosList.splice(idx, 1);
+        renderRepuestosTable();
+      });
+
+      tdDel.appendChild(btnDel);
+      tr.appendChild(tdNom);
+      tr.appendChild(tdQty);
+      tr.appendChild(tdDel);
+      tbody.appendChild(tr);
+    })(i, repuestosList[i]);
+  }
+}
+
+// =============================================
+// FIRMAS EN CANVAS
+// =============================================
+function initCanvasSignatures() {
+  var cTec = G('canvas-tecnico');
+  var cSup = G('canvas-supervisor');
+
+  if (cTec && cSup) {
+    setupCanvas(cTec);
+    setupCanvas(cSup);
+
+    G('clear-sig-tec').addEventListener('click', function() { clearCanvas(cTec); });
+    G('clear-sig-sup').addEventListener('click', function() { clearCanvas(cSup); });
+  }
+
+  // Botón Finalizar
+  var btnFin = G('btn-finalizar-ot');
+  if (btnFin) {
+    btnFin.addEventListener('click', function() {
+      var supName = G('supervisor-nom') ? G('supervisor-nom').value.trim() : '';
+      if (!supName) {
+        alert('El nombre del Supervisor / Autorizador es obligatorio para cerrar la orden.');
+        return;
+      }
+      finalizeOT();
+    });
+  }
+
+  // Reiniciar
+  var btnRe = G('btn-reiniciar');
+  if (btnRe) {
+    btnRe.addEventListener('click', function() {
+      if (confirm('¿Confirma abrir una nueva ficha? Se perderán los datos actuales.')) {
+        window.location.reload();
+      }
+    });
+  }
+
+  // PDF
+  var btnPdf = G('btn-pdf');
+  if (btnPdf) {
+    btnPdf.addEventListener('click', buildPDF);
+  }
+}
+
+function setupCanvas(canvas) {
+  var ctx = canvas.getContext('2d');
+  var drawing = false;
+  var initialized = false;
+
+  // FIX CRÍTICO: El canvas está en el paso 5 (display:none al cargar).
+  // getBoundingClientRect() en un elemento oculto devuelve width=0, height=0.
+  // La solución es inicializar dimensiones LAZY: la primera vez que el usuario
+  // toca o hace mousedown — en ese momento el canvas ya es visible y tiene
+  // dimensiones reales. Llamamos ensureInit() antes de cada operación de dibujo.
+  function ensureInit() {
+    if (initialized) return;
+    var rect  = canvas.getBoundingClientRect();
+    if (rect.width === 0) return; // todavía oculto, no inicializar
+    var ratio = window.devicePixelRatio || 1;
+    // Guardar el tamaño CSS lógico antes de modificar .width/.height
+    var cssW = rect.width;
+    var cssH = rect.height;
+    canvas.width  = Math.round(cssW  * ratio);
+    canvas.height = Math.round(cssH * ratio);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    applyStyle();
+    initialized = true;
+  }
+
+  function applyStyle() {
+    ctx.strokeStyle = '#1a1a2e';
+    ctx.lineWidth   = 2.5;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+  }
+
+  function getPos(e, isTouch) {
+    var rect = canvas.getBoundingClientRect();
+    var src  = isTouch ? e.touches[0] : e;
+    return {
+      x: src.clientX - rect.left,
+      y: src.clientY - rect.top
+    };
+  }
+
+  // Mouse
+  canvas.addEventListener('mousedown', function(e) {
+    ensureInit();
+    drawing = true;
+    var p = getPos(e, false);
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  });
+  canvas.addEventListener('mousemove', function(e) {
+    if (!drawing) return;
+    var p = getPos(e, false);
+    ctx.lineTo(p.x, p.y); ctx.stroke();
+  });
+  canvas.addEventListener('mouseup',   function() { drawing = false; });
+  canvas.addEventListener('mouseleave',function() { drawing = false; });
+
+  // Touch (passive:false obligatorio para bloquear scroll mientras se firma)
+  canvas.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    ensureInit();
+    drawing = true;
+    var p = getPos(e, true);
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    if (!drawing) return;
+    var p = getPos(e, true);
+    ctx.lineTo(p.x, p.y); ctx.stroke();
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', function() { drawing = false; });
+
+  // Exponer para PDF y limpieza
+  canvas._ctx         = ctx;
+  canvas._ensureInit  = ensureInit;
+}
+
+function clearCanvas(canvas) {
+  if (canvas._ensureInit) canvas._ensureInit();
+  var ctx = canvas._ctx || canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// =============================================
+// DICTADO ASISTIDO POR IA (reemplaza Web Speech API)
+// La Web Speech API está bloqueada en iframes (Claude preview, etc.).
+// Solución: modal de dictado que usa la API de Anthropic para procesar
+// el texto ingresado y redactarlo como nota técnica de mantenimiento.
+// =============================================
+
+// Inyectar estilos del modal de dictado
+(function injectVoiceModalStyles() {
+  var style = document.createElement('style');
+  style.textContent = [
+    '#voice-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;align-items:center;justify-content:center;padding:16px;}',
+    '#voice-modal-overlay.open{display:flex;}',
+    '#voice-modal{background:var(--surface);border-radius:8px;border:1px solid var(--accent);padding:20px;width:100%;max-width:520px;box-shadow:0 8px 32px rgba(0,0,0,0.6);}',
+    '#voice-modal h3{color:var(--accent);font-size:14px;margin-bottom:4px;letter-spacing:0.5px;}',
+    '#voice-modal p.vm-sub{color:var(--muted);font-size:12px;margin-bottom:14px;}',
+    '#vm-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:6px;font-size:14px;font-family:inherit;resize:vertical;min-height:90px;outline:none;}',
+    '#vm-input:focus{border-color:var(--accent);}',
+    '.vm-btns{display:flex;gap:8px;margin-top:12px;}',
+    '#vm-send{flex:1;background:var(--accent);color:#fff;border:none;padding:11px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;}',
+    '#vm-send:disabled{opacity:0.5;cursor:default;}',
+    '#vm-cancel{background:var(--surface2);color:var(--text);border:none;padding:11px 16px;border-radius:6px;font-size:13px;cursor:pointer;}',
+    '#vm-status{font-size:12px;color:var(--muted);margin-top:8px;min-height:18px;}',
+    '#vm-status.err{color:var(--red);}',
+    '#vm-status.ok{color:var(--green);}'
+  ].join('');
+  document.head.appendChild(style);
+})();
+
+// Inyectar HTML del modal
+(function injectVoiceModal() {
+  var div = document.createElement('div');
+  div.id = 'voice-modal-overlay';
+  div.innerHTML = [
+    '<div id="voice-modal">',
+      '<h3>✦ ASISTENTE DE REDACCIÓN TÉCNICA</h3>',
+      '<p class="vm-sub">Describa brevemente lo observado — la IA redacta la nota técnica formal en lenguaje de mantenimiento.</p>',
+      '<textarea id="vm-input" placeholder="Ej: el compresor hace ruido al arrancar y hay aceite en el piso cerca del sello...""></textarea>',
+      '<div class="vm-btns">',
+        '<button id="vm-send">Redactar con IA →</button>',
+        '<button id="vm-cancel">Cancelar</button>',
+      '</div>',
+      '<div id="vm-status"></div>',
+    '</div>'
+  ].join('');
+  document.body.appendChild(div);
+})();
+
+var voiceModalTarget = null; // ID del textarea destino
+
+function initSpeech() {
+  // Registrar listeners en botones de voz estáticos
+  var staticVBtns = document.querySelectorAll('.v-btn');
+  for (var i = 0; i < staticVBtns.length; i++) {
+    (function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var target = btn.getAttribute('data-target');
+        if (target) openVoiceModal(target);
+      });
+    })(staticVBtns[i]);
+  }
+
+  // Botones del modal
+  var sendBtn   = G('vm-send');
+  var cancelBtn = G('vm-cancel');
+  var overlay   = G('voice-modal-overlay');
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', function() {
+      closeVoiceModal();
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) closeVoiceModal();
+    });
+  }
+
+  if (sendBtn) {
+    sendBtn.addEventListener('click', function() {
+      runVoiceAI();
+    });
+  }
+
+  // Enter en textarea también envía (Ctrl+Enter)
+  var vmInput = G('vm-input');
+  if (vmInput) {
+    vmInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        runVoiceAI();
+      }
+    });
+  }
+}
+
+function openVoiceModal(targetId) {
+  voiceModalTarget = targetId;
+  var overlay = G('voice-modal-overlay');
+  var input   = G('vm-input');
+  var status  = G('vm-status');
+  var sendBtn = G('vm-send');
+
+  if (overlay) overlay.classList.add('open');
+  if (input)   { input.value = ''; input.focus(); }
+  if (status)  { status.textContent = ''; status.className = ''; }
+  if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Redactar con IA →'; }
+}
+
+function closeVoiceModal() {
+  var overlay = G('voice-modal-overlay');
+  if (overlay) overlay.classList.remove('open');
+  voiceModalTarget = null;
+}
+
+function runVoiceAI() {
+  var input   = G('vm-input');
+  var status  = G('vm-status');
+  var sendBtn = G('vm-send');
+
+  if (!input || !input.value.trim()) {
+    if (status) { status.textContent = 'Ingrese una descripción primero.'; status.className = 'err'; }
+    return;
+  }
+
+  var rawText = input.value.trim();
+
+  // Detectar contexto según el campo destino
+  var contextHints = {
+    'desc-inicial':  'diagnóstico inicial del estado del equipo al momento de apertura de la OT',
+    'desc-entrega':  'nota de entrega y trabajos realizados durante la intervención de mantenimiento',
+    'desc-cierre':   'informe de cierre técnico con conclusiones y estado final del activo'
+  };
+  var hint = contextHints[voiceModalTarget] || 'nota técnica de mantenimiento industrial';
+
+  // Si el target es un NC del checklist
+  if (voiceModalTarget && voiceModalTarget.indexOf('ta-nc-') === 0) {
+    hint = 'descripción de hallazgo No Conforme en lista de verificación de mantenimiento';
+  }
+
+  if (status)  { status.textContent = 'Procesando con IA...'; status.className = ''; }
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Procesando...'; }
+
+  var promptText =
+    'Eres un redactor técnico especializado en mantenimiento industrial para POSTECSA S.A. ' +
+    '(fabricante de elementos prefabricados de concreto en Colombia). ' +
+    'El técnico te dictó de forma informal lo siguiente:\n\n"' + rawText + '"\n\n' +
+    'Redacta esto como ' + hint + '. ' +
+    'Usa lenguaje técnico formal en español colombiano. ' +
+    'Mantén toda la información relevante, agrega terminología técnica apropiada. ' +
+    'No uses viñetas ni numeración — redacta en prosa continua. ' +
+    'Máximo 3 oraciones. Responde SOLO con el texto redactado, sin explicaciones ni encabezados.';
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: promptText }]
+    })
+  })
+  .then(function(resp) {
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    return resp.json();
+  })
+  .then(function(data) {
+    var redacted = '';
+    if (data.content && data.content.length > 0) {
+      redacted = data.content[0].text || '';
+    }
+    if (!redacted) throw new Error('Respuesta vacía');
+
+    // Insertar texto redactado en el campo destino
+    var ta = G(voiceModalTarget);
+    if (ta) {
+      ta.value = redacted.trim();
+    }
+
+    if (status) { status.textContent = '✓ Texto insertado correctamente.'; status.className = 'ok'; }
+    if (sendBtn) { sendBtn.textContent = 'Redactar con IA →'; sendBtn.disabled = false; }
+
+    // Cerrar modal tras 800ms
+    setTimeout(closeVoiceModal, 800);
+  })
+  .catch(function(err) {
+    if (status) {
+      status.textContent = 'Error al contactar la IA. Verifique conexión.';
+      status.className = 'err';
+    }
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Reintentar →'; }
+    console.error('Voice AI error:', err);
+  });
+}
+
+// Stub de vToggle para compatibilidad (ya no se usa Web Speech)
+function vToggle(targetId) { openVoiceModal(targetId); }
+function stopVoice() {}
+var recognition = null;
+var currentVoiceTarget = null;
+var speechActive = false;
+
+// =============================================
+// FINALIZAR ORDEN
+// =============================================
+function finalizeOT() {
+  var p5    = G('p5');
+  var pSucc = G('p-success');
+  var otNum = G('otid') ? G('otid').value : 'OT-???';
+
+  if (p5) p5.classList.remove('on');
+  if (pSucc) pSucc.classList.add('on');
+
+  var pillEl = G('success-ot-num');
+  if (pillEl) pillEl.textContent = otNum;
+
+  step = TOTAL_STEPS + 1;
+  updNav();
+}
+
+// =============================================
+// CONECTIVIDAD
+// =============================================
+function initNetworkMonitor() {
+  function updateBadge() {
+    var badge = G('connection-badge');
+    if (!badge) return;
+    if (navigator.onLine) {
+      badge.textContent = 'ONLINE';
+      badge.classList.remove('offline');
+    } else {
+      badge.textContent = 'OFFLINE';
+      badge.classList.add('offline');
+    }
+  }
+  window.addEventListener('online',  updateBadge);
+  window.addEventListener('offline', updateBadge);
+  updateBadge();
+}
+
+// =============================================
+// GENERACIÓN DE PDF
+// =============================================
+function buildPDF() {
+  if (typeof jsPDF !== 'undefined' || (window.jspdf && window.jspdf.jsPDF)) {
+    doPDFGeneration();
+    return;
+  }
+
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s.onload  = function() { setTimeout(doPDFGeneration, 200); };
+  s.onerror = function() {
+    alert(
+      'Sin conexión para cargar jsPDF.\n\n' +
+      'Alternativa para guardar como PDF:\n' +
+      '• Android/Chrome: Menú ⋮ → Imprimir → Guardar como PDF\n' +
+      '• iOS/Safari: Compartir → Imprimir → guardar en Archivos'
+    );
+  };
+  document.body.appendChild(s);
+}
+
+function doPDFGeneration() {
+  try {
+    var lib = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : jsPDF;
+    var doc = new lib({ orientation: 'p', unit: 'mm', format: 'a4' });
+
+    // ---- Extraer datos ----
+    var otNum   = G('otid')              ? G('otid').value              : 'S/N';
+    var fAp     = G('fecha-ap')          ? G('fecha-ap').value          : '—';
+    var area    = G('area-txt')          ? G('area-txt').value          : '—';
+    var gps     = G('gps-txt')           ? G('gps-txt').value           : '—';
+    var mTipo   = G('maint-type')        ? G('maint-type').value        : '—';
+    var prio    = G('priority-sel')      ? G('priority-sel').value      : '—';
+    var dIni    = G('desc-inicial')      ? G('desc-inicial').value || 'Sin observaciones.' : '—';
+    var assetId = G('asset-id')          ? G('asset-id').value          : '—';
+    var assetNm = G('ast-nom')           ? G('ast-nom').textContent     : '—';
+    var dEnt    = G('desc-entrega')      ? G('desc-entrega').value || 'Sin observaciones.' : '—';
+    var estCie  = G('estado-cierre-sel') ? G('estado-cierre-sel').options[G('estado-cierre-sel').selectedIndex].text : '—';
+    var dCie    = G('desc-cierre')       ? G('desc-cierre').value || 'Sin conclusiones.' : '—';
+    var supNom  = G('supervisor-nom')    ? G('supervisor-nom').value    : '—';
+
+    var tecSel  = G('tecnico-sel');
+    var tecNom  = (tecSel && tecSel.selectedIndex > 0)
+                  ? tecSel.options[tecSel.selectedIndex].text
+                  : 'No asignado';
+
+    // ---- Colores corporativos ----
+    var BG_R = 11,  BG_G = 21,  BG_B = 32;
+    var SF_R = 21,  SF_G = 34,  SF_B = 54;
+    var AC_R = 232, AC_G = 99,  AC_B = 10;
+    var TX_R = 226, TX_G = 232, TX_B = 240;
+    var MT_R = 143, MT_G = 163, MT_B = 188;
+
+    // ---- PÁGINA 1 ----
+    doc.setFillColor(BG_R, BG_G, BG_B);
+    doc.rect(0, 0, 210, 297, 'F');
+
+    // Cabecera naranja
+    doc.setFillColor(AC_R, AC_G, AC_B);
+    doc.rect(0, 0, 210, 22, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('POSTECSA S.A. — REPORTE DE MANTENIMIENTO INDUSTRIAL', 12, 11);
+    doc.setFontSize(10);
+    doc.text(otNum, 175, 11);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Tipo: ' + mTipo + '  |  Prioridad: ' + prio + '  |  ' + fAp, 12, 17);
+
+    // Bloque 1: Apertura
+    var y = 28;
+    doc.setFillColor(SF_R, SF_G, SF_B);
+    doc.rect(10, y, 190, 36, 'F');
+    doc.setTextColor(AC_R, AC_G, AC_B);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('1. DATOS DE APERTURA Y LOCALIZACIÓN', 13, y + 6);
+    doc.setTextColor(TX_R, TX_G, TX_B);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Técnico Encargado: ' + tecNom,   13, y + 13);
+    doc.text('Área de Operación: ' + area,      13, y + 20);
+    doc.text('Coordenadas GPS: '  + gps,        13, y + 27);
+
+    // Bloque 2: Activo
+    y += 42;
+    doc.setFillColor(SF_R, SF_G, SF_B);
+    doc.rect(10, y, 190, 22, 'F');
+    doc.setTextColor(AC_R, AC_G, AC_B);
+    doc.setFont('helvetica', 'bold');
+    doc.text('2. ACTIVO EVALUADO', 13, y + 6);
+    doc.setTextColor(TX_R, TX_G, TX_B);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Código Serial: ' + assetId, 13, y + 13);
+    doc.text('Equipo: ' + assetNm, 80, y + 13);
+
+    // Bloque 3: Diagnóstico inicial
+    y += 28;
+    var dIniLines = doc.splitTextToSize(dIni, 180);
+    var blockH3 = Math.max(22, 12 + dIniLines.length * 5);
+    doc.setFillColor(SF_R, SF_G, SF_B);
+    doc.rect(10, y, 190, blockH3, 'F');
+    doc.setTextColor(AC_R, AC_G, AC_B);
+    doc.setFont('helvetica', 'bold');
+    doc.text('3. DIAGNÓSTICO INICIAL', 13, y + 6);
+    doc.setTextColor(TX_R, TX_G, TX_B);
+    doc.setFont('helvetica', 'normal');
+    doc.text(dIniLines, 13, y + 13);
+
+    // Bloque 4: Trabajos
+    y += blockH3 + 6;
+    var dEntLines = doc.splitTextToSize('Notas de entrega: ' + dEnt, 180);
+    var rStr = 'Repuestos: ';
+    if (repuestosList.length === 0) {
+      rStr += 'Ninguno.';
+    } else {
+      for (var k = 0; k < repuestosList.length; k++) {
+        rStr += repuestosList[k].item + ' (x' + repuestosList[k].qty + ')';
+        if (k < repuestosList.length - 1) rStr += ', ';
+      }
+    }
+    var rLines = doc.splitTextToSize(rStr, 180);
+    var blockH4 = Math.max(28, 14 + dEntLines.length * 5 + rLines.length * 5);
+    doc.setFillColor(SF_R, SF_G, SF_B);
+    doc.rect(10, y, 190, blockH4, 'F');
+    doc.setTextColor(AC_R, AC_G, AC_B);
+    doc.setFont('helvetica', 'bold');
+    doc.text('4. TRABAJOS REALIZADOS Y MATERIALES', 13, y + 6);
+    doc.setTextColor(TX_R, TX_G, TX_B);
+    doc.setFont('helvetica', 'normal');
+    doc.text(dEntLines, 13, y + 13);
+    doc.text(rLines, 13, y + 13 + dEntLines.length * 5 + 3);
+
+    // Bloque 5: Cierre
+    y += blockH4 + 6;
+    var dCieLines = doc.splitTextToSize(dCie, 180);
+    var blockH5 = Math.max(28, 14 + dCieLines.length * 5);
+    doc.setFillColor(SF_R, SF_G, SF_B);
+    doc.rect(10, y, 190, blockH5, 'F');
+    doc.setTextColor(AC_R, AC_G, AC_B);
+    doc.setFont('helvetica', 'bold');
+    doc.text('5. CONCLUSIONES Y ESTADO FINAL', 13, y + 6);
+    doc.setTextColor(TX_R, TX_G, TX_B);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Estado: ' + estCie, 13, y + 13);
+    doc.text(dCieLines, 13, y + 20);
+
+    // Bloque Firmas
+    y += blockH5 + 6;
+    var blockHF = 52;
+    doc.setFillColor(SF_R, SF_G, SF_B);
+    doc.rect(10, y, 190, blockHF, 'F');
+    doc.setTextColor(AC_R, AC_G, AC_B);
+    doc.setFont('helvetica', 'bold');
+    doc.text('SIGNATARIOS DE CONFORMIDAD', 13, y + 6);
+
+    doc.setTextColor(MT_R, MT_G, MT_B);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text('Técnico Responsable: ' + tecNom, 13, y + 43);
+    doc.text('Supervisor / Autorizador: ' + supNom, 115, y + 43);
+
+    // Insertar firmas desde canvas
+    try {
+      var cTec = G('canvas-tecnico');
+      var cSup = G('canvas-supervisor');
+      if (cTec) doc.addImage(cTec.toDataURL('image/png'), 'PNG', 15, y + 11, 80, 28);
+      if (cSup) doc.addImage(cSup.toDataURL('image/png'), 'PNG', 115, y + 11, 80, 28);
+    } catch (sigErr) { /* Canvas vacío — omitir */ }
+
+    // ---- PÁGINA 2: Anexo Fotográfico ----
+    if (fotosAntes.length > 0 || fotosDespues.length > 0) {
+      doc.addPage();
+      doc.setFillColor(BG_R, BG_G, BG_B);
+      doc.rect(0, 0, 210, 297, 'F');
+
+      doc.setFillColor(AC_R, AC_G, AC_B);
+      doc.rect(0, 0, 210, 15, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.text('ANEXO FOTOGRÁFICO — ' + otNum, 12, 10);
+
+      var yP = 22;
+      if (fotosAntes.length > 0) {
+        doc.setTextColor(AC_R, AC_G, AC_B);
+        doc.setFontSize(8);
+        doc.text('EVIDENCIAS ANTES DE LA INTERVENCIÓN', 12, yP);
+        yP += 3;
+        for (var fa = 0; fa < Math.min(fotosAntes.length, 3); fa++) {
+          try { doc.addImage(fotosAntes[fa], 'JPEG', 12 + fa * 63, yP, 60, 44); } catch(e) {}
+        }
+        yP += 52;
+      }
+      if (fotosDespues.length > 0) {
+        doc.setTextColor(AC_R, AC_G, AC_B);
+        doc.setFontSize(8);
+        doc.text('EVIDENCIAS DESPUÉS DE LA INTERVENCIÓN', 12, yP);
+        yP += 3;
+        for (var fd = 0; fd < Math.min(fotosDespues.length, 3); fd++) {
+          try { doc.addImage(fotosDespues[fd], 'JPEG', 12 + fd * 63, yP, 60, 44); } catch(e) {}
+        }
+      }
+    }
+
+    // ---- Pie de página en todas las páginas ----
+    var total = doc.internal.getNumberOfPages();
+    for (var p = 1; p <= total; p++) {
+      doc.setPage(p);
+      doc.setTextColor(MT_R, MT_G, MT_B);
+      doc.setFontSize(7);
+      doc.text('POSTECSA S.A. — Gestión de Mantenimiento Industrial  |  Pág. ' + p + ' de ' + total, 12, 291);
+      doc.text('Generado: ' + formatDate(new Date()), 165, 291);
+    }
+
+    doc.save('REPORTE-MANTENIMIENTO-' + otNum + '.pdf');
+
+  } catch (err) {
+    alert('Error al generar el PDF. Use la opción "Imprimir → Guardar como PDF" del navegador.');
+    console.error(err);
+  }
+}
+</script>
+</body>
+</html>
