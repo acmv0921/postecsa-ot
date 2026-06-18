@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="POSTECSA Gerencia">
+<meta name="theme-color" content="#0f2540">
+<link rel="manifest" href="gerencia-manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="POSTECSA Gerencia">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>POSTECSA — Biblioteca de Materiales</title>
+<style>
+:root {
+  --navy:  #1a3c5e;
+  --dark:  #0f2540;
+  --oran:  #e87c1e;
+  --oran2: #f5a623;
+  --white: #ffffff;
+  --lgray: #f0f4f8;
+  --mgray: #cdd5e0;
+  --tgray: #5a6478;
+  --green: #1a7a4a;
+  --red:   #c0392b;
+  --r: 10px;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(145deg, #0f2540 0%, #1a3c5e 100%);
+  min-height: 100vh;
+  padding: 0 0 40px;
+}
+
+/* ── HEADER ── */
+.hdr {
+  background: linear-gradient(130deg, #0f2540, #1a3c5e);
+  border-bottom: 3px solid var(--oran);
+  padding: 14px 20px 12px;
+}
+.hdr-row { display:flex; align-items:center; gap:12px; }
+.hdr-logo { height:38px; width:auto; object-fit:contain; background:#fff; border-radius:6px; padding:4px 8px; }
+.hdr-info { flex:1; }
+.hdr-info h1 { color:#fff; font-size:15px; font-weight:700; }
+.hdr-info p  { color:var(--mgray); font-size:10px; margin-top:2px; }
+.hdr-badge { background:var(--oran); color:#fff; font-size:10px; font-weight:700; padding:4px 10px; border-radius:20px; white-space:nowrap; }
+
+/* ── TABS ── */
+.tabs { display:flex; background:rgba(255,255,255,.06); border-bottom:2px solid rgba(255,255,255,.1); overflow-x:auto; }
+.tab { flex:1; min-width:80px; padding:12px 8px; text-align:center; font-size:11px; font-weight:700; color:rgba(255,255,255,.5); cursor:pointer; border-bottom:3px solid transparent; transition:.2s; white-space:nowrap; }
+.tab.on { color:#fff; border-bottom-color:var(--oran); background:rgba(232,124,30,.12); }
+.tab-icon { font-size:18px; display:block; margin-bottom:3px; }
+
+/* ── PANEL ── */
+.panel { display:none; padding:16px 16px 24px; }
+.panel.on { display:block; }
+
+/* ── CARD ── */
+.card { background:#fff; border-radius:var(--r); box-shadow:0 2px 16px rgba(0,0,0,.15); margin-bottom:14px; overflow:hidden; }
+.card-hdr { background:var(--navy); padding:12px 16px; display:flex; align-items:center; gap:8px; }
+.card-hdr span { color:#fff; font-size:13px; font-weight:700; flex:1; }
+.card-body { padding:14px 16px; }
+
+/* ── KPI GRID ── */
+.kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.kpi { background:#fff; border-radius:var(--r); padding:14px 16px; text-align:center; box-shadow:0 2px 12px rgba(0,0,0,.12); }
+.kpi-val { font-size:28px; font-weight:800; color:var(--navy); line-height:1; }
+.kpi-lbl { font-size:10px; color:var(--tgray); margin-top:4px; text-transform:uppercase; letter-spacing:.5px; }
+.kpi.accent .kpi-val { color:var(--oran); }
+
+/* ── SEARCH ── */
+.search-box { display:flex; gap:8px; margin-bottom:12px; }
+.search-box input, .search-box select {
+  flex:1; padding:10px 12px; border:1.5px solid var(--mgray);
+  border-radius:8px; font-size:13px; outline:none;
+}
+.search-box input:focus, .search-box select:focus { border-color:var(--oran); }
+
+/* ── LISTA MATERIALES ── */
+.mat-list { display:flex; flex-direction:column; gap:6px; }
+.mat-item {
+  background:var(--lgray); border-radius:8px; padding:10px 14px;
+  display:flex; align-items:center; gap:10px;
+  border-left:4px solid var(--oran);
+}
+.mat-item-info { flex:1; min-width:0; }
+.mat-item-nom  { font-size:13px; font-weight:700; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mat-item-sub  { font-size:11px; color:var(--tgray); margin-top:2px; }
+.mat-item-precio { font-size:14px; font-weight:800; color:var(--navy); white-space:nowrap; }
+.mat-item-precio span { font-size:10px; color:var(--tgray); font-weight:400; }
+
+/* ── TABLA HISTORIAL ── */
+.tabla { width:100%; border-collapse:collapse; font-size:12px; }
+.tabla th { background:var(--navy); color:#fff; padding:8px 10px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.4px; }
+.tabla td { padding:8px 10px; border-bottom:1px solid #e2e8f0; color:#333; }
+.tabla tr:nth-child(even) td { background:var(--lgray); }
+.tabla tr:hover td { background:#e8f0fa; }
+.wrap-table { overflow-x:auto; }
+
+/* ── RANKING ── */
+.rank-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid #e2e8f0; }
+.rank-n { width:28px; height:28px; border-radius:50%; background:var(--navy); color:#fff; font-size:12px; font-weight:800; display:grid; place-items:center; flex-shrink:0; }
+.rank-n.top1 { background:var(--oran); }
+.rank-n.top2 { background:#6b7280; }
+.rank-n.top3 { background:#92400e; }
+.rank-bar-wrap { flex:1; }
+.rank-nom { font-size:12.5px; font-weight:700; color:var(--navy); margin-bottom:4px; }
+.rank-bar { height:6px; background:var(--lgray); border-radius:3px; overflow:hidden; }
+.rank-fill { height:100%; background:var(--oran); border-radius:3px; transition:width .5s; }
+.rank-count { font-size:11px; color:var(--tgray); white-space:nowrap; }
+
+/* ── PRECIO EDITOR ── */
+.precio-row { display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid #e2e8f0; }
+.precio-nom { flex:1; font-size:12.5px; color:var(--navy); font-weight:600; }
+.precio-input { width:110px; padding:6px 8px; border:1.5px solid var(--mgray); border-radius:6px; font-size:12px; text-align:right; }
+.precio-um { font-size:11px; color:var(--tgray); width:35px; }
+.precio-btn { padding:6px 10px; background:var(--oran); color:#fff; border:none; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; }
+
+/* ── EMPTY / LOADING ── */
+.empty { text-align:center; padding:40px 20px; color:var(--tgray); }
+.empty-ico { font-size:40px; margin-bottom:10px; }
+.loading { text-align:center; padding:30px; color:var(--tgray); font-size:13px; }
+.spin { width:24px; height:24px; border:3px solid var(--mgray); border-top-color:var(--oran); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 10px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── TOAST ── */
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#1a3c5e; color:#fff; padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; opacity:0; transition:.3s; z-index:999; pointer-events:none; }
+.toast.on { opacity:1; }
+
+/* ── REFRESH BTN ── */
+.btn-refresh { width:100%; padding:11px; background:var(--navy); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; margin-bottom:14px; display:flex; align-items:center; justify-content:center; gap:8px; }
+.btn-refresh:active { background:var(--dark); }
+
+/* ── BORRADO ── */
+.btn-del { background:none; border:1.5px solid #e2e8f0; border-radius:6px; padding:5px 8px; cursor:pointer; font-size:14px; color:#c0392b; transition:.2s; flex-shrink:0; }
+.btn-del:hover { background:#fff0f0; border-color:#c0392b; }
+.btn-limpiar { width:100%; padding:11px; background:#c0392b; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; margin-bottom:14px; display:flex; align-items:center; justify-content:center; gap:8px; }
+.btn-limpiar:active { background:#922b21; }
+
+/* ── INFORMES ── */
+.inf-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+.inf-card { background:#fff; border-radius:var(--r); padding:18px 16px; text-align:center; box-shadow:0 2px 12px rgba(0,0,0,.1); cursor:pointer; border:2px solid transparent; transition:.2s; }
+.inf-card:hover { border-color:var(--oran); transform:translateY(-2px); }
+.inf-card-ico { font-size:32px; margin-bottom:8px; }
+.inf-card-tit { font-size:13px; font-weight:700; color:var(--navy); margin-bottom:4px; }
+.inf-card-sub { font-size:11px; color:var(--tgray); }
+.btn-gen { width:100%; padding:13px; background:linear-gradient(130deg,var(--navy),var(--dark)); color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; margin-top:8px; display:flex; align-items:center; justify-content:center; gap:8px; }
+.btn-gen:active { opacity:.85; }
+.inf-sel { border:2px solid var(--oran) !important; background:rgba(232,124,30,.06) !important; }
+
+/* ── RESPONSIVE ── */
+@media(min-width:600px) {
+  .kpi-grid { grid-template-columns:repeat(4,1fr); }
+  .panel { padding:20px 24px 32px; max-width:900px; margin:0 auto; }
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-row">
+    <img class="hdr-logo" id="logoImg" src="" alt="POSTECSA">
+    <div class="hdr-info">
+      <h1>Biblioteca de Materiales</h1>
+      <p>POSTEC DE OCCIDENTE S.A.S. · Gestión de Mantenimiento</p>
+    </div>
+    <div class="hdr-badge">🔒 Gerencia</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab on" onclick="showTab('biblioteca')"><span class="tab-icon">📦</span>Biblioteca</div>
+  <div class="tab" onclick="showTab('historial')"><span class="tab-icon">📋</span>Historial</div>
+  <div class="tab" onclick="showTab('ranking')"><span class="tab-icon">🏆</span>Ranking</div>
+  <div class="tab" onclick="showTab('precios')"><span class="tab-icon">💰</span>Precios</div>
+  <div class="tab" onclick="showTab('informes')"><span class="tab-icon">📊</span>Informes</div>
+</div>
+
+<!-- PANEL: BIBLIOTECA -->
+<div class="panel on" id="panelBiblioteca">
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi"><div class="kpi-val" id="kpiTotal">—</div><div class="kpi-lbl">Materiales únicos</div></div>
+    <div class="kpi accent"><div class="kpi-val" id="kpiOTs">—</div><div class="kpi-lbl">OT registradas</div></div>
+    <div class="kpi"><div class="kpi-val" id="kpiEquipos">—</div><div class="kpi-lbl">Equipos</div></div>
+    <div class="kpi accent"><div class="kpi-val" id="kpiUltima">—</div><div class="kpi-lbl">Última actualización</div></div>
+  </div>
+
+  <button class="btn-refresh" onclick="cargarDatos()">🔄 Actualizar desde Google Sheet</button>
+
+  <button class="btn-limpiar" onclick="limpiarTodo()">🗑️ Limpiar todo el historial</button>
+  <div class="search-box">
+    <input id="buscarMat" placeholder="🔍 Buscar material..." oninput="renderBiblioteca()">
+    <select id="filtroCat" onchange="renderBiblioteca()">
+      <option value="">Todos los equipos</option>
+    </select>
+  </div>
+
+  <div class="mat-list" id="listaBiblioteca">
+    <div class="loading"><div class="spin"></div>Cargando datos...</div>
+  </div>
+</div>
+
+<!-- PANEL: HISTORIAL -->
+<div class="panel" id="panelHistorial">
+  <div class="search-box">
+    <input id="buscarHist" placeholder="🔍 Buscar OT, equipo, material..." oninput="renderHistorial()">
+    <select id="filtroEquipoHist" onchange="renderHistorial()">
+      <option value="">Todos los equipos</option>
+    </select>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><span>📋 Registro de OT con Materiales</span></div>
+    <div class="wrap-table">
+      <table class="tabla">
+        <thead><tr>
+          <th>Fecha</th><th>N° OT</th><th>Equipo</th><th>Mecánico</th>
+          <th>Material</th><th>Cant.</th><th>UM</th><th>Precio unit.</th>
+        </tr></thead>
+        <tbody id="tbodyHistorial"><tr><td colspan="8" style="text-align:center;padding:20px;color:#888;">Cargando...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL: RANKING -->
+<div class="panel" id="panelRanking">
+  <div class="card">
+    <div class="card-hdr"><span>🏆 Materiales más usados</span></div>
+    <div id="rankingList" class="card-body">
+      <div class="loading"><div class="spin"></div>Cargando...</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><span>⚙️ Equipos con más intervenciones</span></div>
+    <div id="rankingEquipos" class="card-body">
+      <div class="loading"><div class="spin"></div>Cargando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL: PRECIOS -->
+<div class="panel" id="panelPrecios">
+  <div class="card">
+    <div class="card-hdr"><span>💰 Actualizar precios unitarios</span></div>
+    <div class="card-body" style="padding-bottom:6px;">
+      <p style="font-size:11px;color:var(--tgray);margin-bottom:12px;">Los precios actualizados aquí se guardan en este dispositivo y se usan como referencia en la biblioteca.</p>
+      <div id="preciosList">
+        <div class="loading"><div class="spin"></div>Cargando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIGURACIÓN ─────────────────────────────────────────────
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbyFiCuXWW2DsrSmRotQ93xRZYjMBAWQnoa-STlqNINaf7rSWhpkwgUpYH1ngPcQetTW/exec';
+var LOGO_URL = 'https://acmv0921.github.io/postecsa-ot/icon-192.png';
+
+// ── ESTADO ───────────────────────────────────────────────────
+var datos = [];       // todos los registros del Sheet
+var precios = {};     // precios editados por gerencia
+
+function cargarPreciosLocales() {
+  try { precios = JSON.parse(localStorage.getItem('pg_precios') || '{}'); } catch(e) { precios = {}; }
+}
+function guardarPreciosLocales() {
+  try { localStorage.setItem('pg_precios', JSON.stringify(precios)); } catch(e) {}
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  document.getElementById('logoImg').src = LOGO_URL;
+  cargarPreciosLocales();
+  cargarDatos();
+});
+
+// ── CARGAR DATOS DESDE GAS ───────────────────────────────────
+var DATOS_BASE = [
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Rodamiento 6205 genérico",cant:1,um:"Und",precio:12500},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Rodamiento 6205 SKF",cant:1,um:"Und",precio:45000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Rodamiento 6305",cant:1,um:"Und",precio:18000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Rodamiento 6306",cant:1,um:"Und",precio:25000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Rodamiento 6208",cant:1,um:"Und",precio:35000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Chumacera UCP 205",cant:1,um:"Und",precio:65000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Grasa SKF LGEP2 1kg",cant:1,um:"kg",precio:85000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Grasa multipropósito 1kg",cant:1,um:"kg",precio:28000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Banda transportadora caucho x metro",cant:1,um:"m",precio:95000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Lona de banda",cant:1,um:"Und",precio:380000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Correa en V A-30",cant:1,um:"Und",precio:22000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Correa en V B-50",cant:1,um:"Und",precio:38000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Caucho lámina 5mm x metro",cant:1,um:"m",precio:45000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Polea fundición hierro 4 pulgadas",cant:1,um:"Und",precio:185000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Piñón acero 41-40",cant:1,um:"Und",precio:120000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Buje acero 40mm",cant:1,um:"Und",precio:95000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Pasador acero 41-40",cant:1,um:"Und",precio:160000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Mecanizado de eje servicio",cant:1,um:"Und",precio:500000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Fabricación rueda guía",cant:1,um:"Und",precio:190000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Aceite hidráulico ISO 46 galón",cant:1,um:"Gal",precio:97000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Manguera hidráulica 1/2 pulgada x metro",cant:1,um:"m",precio:28000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Manguera hidráulica 3/4 pulgada x metro",cant:1,um:"m",precio:42000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Niple galvanizado 1/2 pulgada",cant:1,um:"Und",precio:4500},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Codo hidráulico 1/2 pulgada",cant:1,um:"Und",precio:8000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Reparación cilindro hidráulico servicio",cant:1,um:"Und",precio:1200000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Tornillo hexagonal M10x30",cant:1,um:"Und",precio:800},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Tornillo hexagonal M12x40",cant:1,um:"Und",precio:1200},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Tuerca M10",cant:1,um:"Und",precio:400},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Tuerca M12",cant:1,um:"Und",precio:600},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Arandela plana M10",cant:1,um:"Und",precio:250},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Perno M16x80",cant:1,um:"Und",precio:2800},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Grasera M8 recta",cant:1,um:"Und",precio:1500},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Anillo retén 40mm",cant:1,um:"Und",precio:8500},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Electrodo 6013 x kg",cant:1,um:"kg",precio:9500},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Electrodo 7018 x kg",cant:1,um:"kg",precio:14000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Lámina HR A36 3mm x kg",cant:1,um:"kg",precio:4500},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Lámina HR A36 6mm x kg",cant:1,um:"kg",precio:4800},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Lámina inox 304 2mm x kg",cant:1,um:"kg",precio:18000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Broca HSS 3/8 pulgada",cant:1,um:"Und",precio:12000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Disco corte 4.5 pulgadas",cant:1,um:"Und",precio:4500},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Disco pulir 4.5 pulgadas",cant:1,um:"Und",precio:5500},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Contactor Schneider 18A 220V",cant:1,um:"Und",precio:195000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Contactor Schneider 32A 220V",cant:1,um:"Und",precio:310000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Relé térmico 9-13A",cant:1,um:"Und",precio:185000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Fusible industrial 25A",cant:1,um:"Und",precio:8500},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Cable THHN No12 x metro",cant:1,um:"m",precio:3200},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Terminal de presión 10mm",cant:1,um:"Und",precio:1800},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Interruptor termomagnético 20A",cant:1,um:"Und",precio:95000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Bornera riel DIN",cant:1,um:"Und",precio:4500},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Aceite motor 15W40 galón",cant:1,um:"Gal",precio:85000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Filtro aceite Komatsu",cant:1,um:"Und",precio:95000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Filtro aire primario",cant:1,um:"Und",precio:120000},
+  {fecha:"2026-06-17",otNum:"BIBLIOTECA-INICIAL",equipo:"General",mecanico:"Biblioteca de Referencia",desc:"Correa alternador",cant:1,um:"Und",precio:53000}
+];
+
+function cargarDatos() {
+  // Cargar datos embebidos inmediatamente
+  datos = DATOS_BASE.slice();
+  procesarDatos();
+  showToast('✅ ' + datos.length + ' materiales cargados');
+}
+
+
+function procesarDatos() {
+  // Poblar filtros de equipo
+  var equipos = [...new Set(datos.map(function(d){ return d.equipo; }).filter(Boolean))].sort();
+  ['filtroCat','filtroEquipoHist'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    var val = sel.value;
+    sel.innerHTML = '<option value="">Todos los equipos</option>';
+    equipos.forEach(function(eq) {
+      var opt = document.createElement('option');
+      opt.value = eq; opt.textContent = eq;
+      sel.appendChild(opt);
+    });
+    sel.value = val;
+  });
+
+  // KPIs
+  var uniqueMats = new Set(datos.map(function(d){ return d.desc; })).size;
+  var uniqueOTs  = new Set(datos.map(function(d){ return d.otNum; })).size;
+  var uniqueEqs  = new Set(datos.map(function(d){ return d.equipo; })).size;
+  var fechas = datos.map(function(d){ return String(d.fecha); }).filter(Boolean).sort();
+  var ultima = fechas.length ? fechas[fechas.length-1].slice(0,10) : '—';
+
+  document.getElementById('kpiTotal').textContent   = uniqueMats;
+  document.getElementById('kpiOTs').textContent     = uniqueOTs;
+  document.getElementById('kpiEquipos').textContent = uniqueEqs;
+  document.getElementById('kpiUltima').textContent  = ultima;
+
+  renderBiblioteca();
+  renderHistorial();
+  renderRanking();
+  renderPrecios();
+}
+
+function mostrarSinDatos() {
+  ['listaBiblioteca'].forEach(function(id) {
+    document.getElementById(id).innerHTML =
+      '<div class="empty"><div class="empty-ico">📭</div><p>Sin datos disponibles.<br>Genera una OT con materiales para poblar la biblioteca.</p></div>';
+  });
+}
+
+// ── BIBLIOTECA ───────────────────────────────────────────────
+function renderBiblioteca() {
+  var q       = (document.getElementById('buscarMat').value || '').toLowerCase();
+  var equipo  = document.getElementById('filtroCat').value;
+  var fmt     = function(n){ return '$' + Number(n||0).toLocaleString('es-CO'); };
+
+  // Agrupar por material único
+  var mapa = {};
+  datos.forEach(function(d) {
+    if(!d.desc) return;
+    if(equipo && d.equipo !== equipo) return;
+    if(q && d.desc.toLowerCase().indexOf(q) === -1) return;
+    var key = d.desc.toLowerCase().trim();
+    if(!mapa[key]) {
+      mapa[key] = { desc:d.desc, um:d.um, usos:0, equipos:new Set(), precio: precios[key] || d.precio || 0 };
+    }
+    mapa[key].usos++;
+    if(d.equipo) mapa[key].equipos.add(d.equipo);
+    // Tomar precio más reciente (no cero)
+    if(!precios[key] && d.precio && Number(d.precio) > 0) {
+      mapa[key].precio = Number(d.precio);
+    }
+  });
+
+  var items = Object.values(mapa).sort(function(a,b){ return b.usos - a.usos; });
+  var L = document.getElementById('listaBiblioteca');
+
+  if(!items.length) {
+    L.innerHTML = '<div class="empty"><div class="empty-ico">🔍</div><p>Sin resultados para esta búsqueda.</p></div>';
+    return;
+  }
+
+  L.innerHTML = '';
+  items.forEach(function(m) {
+    var div = document.createElement('div');
+    div.className = 'mat-item';
+    var descEnc = encodeURIComponent(m.desc);
+    div.innerHTML =
+      '<div class="mat-item-info">' +
+        '<div class="mat-item-nom">' + m.desc + '</div>' +
+        '<div class="mat-item-sub">Usado ' + m.usos + ' vez' + (m.usos>1?'es':'') +
+        ' · Equipos: ' + [...m.equipos].join(', ') + '</div>' +
+      '</div>' +
+      '<div class="mat-item-precio">' +
+        (m.precio > 0 ? fmt(m.precio) : '<span>Sin precio</span>') +
+        '<span>/' + (m.um||'Und') + '</span>' +
+      '</div>' +
+      '<button class="btn-del" onclick="borrarMaterial('' + descEnc + '')" title="Eliminar material">🗑️</button>';
+    L.appendChild(div);
+  });
+}
+
+// ── HISTORIAL ────────────────────────────────────────────────
+function renderHistorial() {
+  var q      = (document.getElementById('buscarHist').value || '').toLowerCase();
+  var equipo = document.getElementById('filtroEquipoHist').value;
+  var fmt    = function(n){ return n > 0 ? '$' + Number(n).toLocaleString('es-CO') : '—'; };
+
+  var filtrados = datos.filter(function(d) {
+    if(equipo && d.equipo !== equipo) return false;
+    if(q) {
+      var txt = [d.otNum, d.equipo, d.mecanico, d.desc].join(' ').toLowerCase();
+      if(txt.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+
+  var tbody = document.getElementById('tbodyHistorial');
+  if(!filtrados.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#888;">Sin registros</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtrados.slice(0,200).map(function(d) {
+    return '<tr><td>' + (String(d.fecha).slice(0,10)||'—') + '</td>' +
+      '<td><b>' + (d.otNum||'—') + '</b></td>' +
+      '<td>' + (d.equipo||'—') + '</td>' +
+      '<td>' + (d.mecanico||'—') + '</td>' +
+      '<td>' + (d.desc||'—') + '</td>' +
+      '<td style="text-align:center">' + (d.cant||0) + '</td>' +
+      '<td>' + (d.um||'—') + '</td>' +
+      '<td style="text-align:right;font-weight:700;color:#1a3c5e">' + fmt(d.precio) + '</td></tr>';
+  }).join('');
+}
+
+// ── RANKING ──────────────────────────────────────────────────
+function renderRanking() {
+  // Materiales más usados
+  var contMat = {};
+  datos.forEach(function(d) {
+    if(!d.desc) return;
+    var k = d.desc.trim();
+    contMat[k] = (contMat[k]||0) + 1;
+  });
+  var topMats = Object.entries(contMat).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  var maxMat  = topMats.length ? topMats[0][1] : 1;
+
+  var RL = document.getElementById('rankingList');
+  if(!topMats.length) {
+    RL.innerHTML = '<div class="empty"><div class="empty-ico">📭</div><p>Sin datos aún</p></div>';
+  } else {
+    RL.innerHTML = topMats.map(function(e, i) {
+      var pct = Math.round(e[1]/maxMat*100);
+      var cls = i===0?'top1':i===1?'top2':i===2?'top3':'';
+      return '<div class="rank-item">' +
+        '<div class="rank-n ' + cls + '">' + (i+1) + '</div>' +
+        '<div class="rank-bar-wrap">' +
+          '<div class="rank-nom">' + e[0] + '</div>' +
+          '<div class="rank-bar"><div class="rank-fill" style="width:' + pct + '%"></div></div>' +
+        '</div>' +
+        '<div class="rank-count">' + e[1] + ' uso' + (e[1]>1?'s':'') + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Equipos con más intervenciones
+  var contEq = {};
+  var otsEq  = {};
+  datos.forEach(function(d) {
+    if(!d.equipo) return;
+    contEq[d.equipo] = (contEq[d.equipo]||0) + 1;
+    if(!otsEq[d.equipo]) otsEq[d.equipo] = new Set();
+    if(d.otNum) otsEq[d.equipo].add(d.otNum);
+  });
+  var topEqs = Object.entries(contEq).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  var maxEq  = topEqs.length ? topEqs[0][1] : 1;
+
+  var RE = document.getElementById('rankingEquipos');
+  if(!topEqs.length) {
+    RE.innerHTML = '<div class="empty"><div class="empty-ico">📭</div><p>Sin datos aún</p></div>';
+  } else {
+    RE.innerHTML = topEqs.map(function(e, i) {
+      var pct = Math.round(e[1]/maxEq*100);
+      var cls = i===0?'top1':i===1?'top2':i===2?'top3':'';
+      var nOTs = otsEq[e[0]] ? otsEq[e[0]].size : 0;
+      return '<div class="rank-item">' +
+        '<div class="rank-n ' + cls + '">' + (i+1) + '</div>' +
+        '<div class="rank-bar-wrap">' +
+          '<div class="rank-nom">' + e[0] + '</div>' +
+          '<div class="rank-bar"><div class="rank-fill" style="width:' + pct + '%"></div></div>' +
+        '</div>' +
+        '<div class="rank-count">' + nOTs + ' OT' + (nOTs>1?'s':'') + '</div>' +
+      '</div>';
+    }).join('');
+  }
+}
+
+// ── PRECIOS ──────────────────────────────────────────────────
+function renderPrecios() {
+  var mapa = {};
+  datos.forEach(function(d) {
+    if(!d.desc) return;
+    var k = d.desc.trim().toLowerCase();
+    if(!mapa[k]) mapa[k] = { desc:d.desc, um:d.um||'Und', precio: precios[k] || Number(d.precio)||0 };
+  });
+
+  var items = Object.entries(mapa).sort(function(a,b){ return a[0].localeCompare(b[0]); });
+  var PL = document.getElementById('preciosList');
+
+  if(!items.length) {
+    PL.innerHTML = '<div class="empty"><div class="empty-ico">📭</div><p>Sin materiales registrados aún</p></div>';
+    return;
+  }
+
+  PL.innerHTML = items.map(function(e) {
+    var k = e[0]; var m = e[1];
+    return '<div class="precio-row">' +
+      '<div class="precio-nom">' + m.desc + '</div>' +
+      '<div class="precio-um">' + m.um + '</div>' +
+      '<input class="precio-input" type="number" id="p_' + encodeURIComponent(k) + '" value="' + (m.precio||'') + '" placeholder="$0" min="0" step="100">' +
+      '<button class="precio-btn" onclick="guardarPrecio(\'' + encodeURIComponent(k) + '\',\'' + encodeURIComponent(m.desc) + '\')">💾</button>' +
+    '</div>';
+  }).join('');
+}
+
+function guardarPrecio(keyEnc, descEnc) {
+  var key  = decodeURIComponent(keyEnc);
+  var desc = decodeURIComponent(descEnc);
+  var inp  = document.getElementById('p_' + keyEnc);
+  var val  = parseFloat(inp.value) || 0;
+  precios[key] = val;
+  guardarPreciosLocales();
+  showToast('💾 Precio de "' + desc.slice(0,20) + '..." guardado');
+  renderBiblioteca();
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('on'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('on'); });
+  var tabs = ['biblioteca','historial','ranking','precios'];
+  document.querySelectorAll('.tab')[tabs.indexOf(tab)].classList.add('on');
+  document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('on');
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+var toastTimer;
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('on'); }, 3000);
+}
+</script>
+
+<!-- PANEL: INFORMES -->
+<div class="panel" id="panelInformes">
+  <div class="card">
+    <div class="card-hdr"><span>📊 Generar Informes PDF</span></div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--tgray);margin-bottom:14px;">Selecciona el tipo de informe que deseas generar. Se descarga como PDF directamente en tu dispositivo.</p>
+      <div class="inf-grid">
+        <div class="inf-card" id="infCard1" onclick="selInforme(1)">
+          <div class="inf-card-ico">📦</div>
+          <div class="inf-card-tit">Materiales</div>
+          <div class="inf-card-sub">Lista completa con precios y frecuencia de uso</div>
+        </div>
+        <div class="inf-card" id="infCard2" onclick="selInforme(2)">
+          <div class="inf-card-ico">⚙️</div>
+          <div class="inf-card-tit">Por Equipo</div>
+          <div class="inf-card-sub">Materiales usados agrupados por máquina</div>
+        </div>
+        <div class="inf-card" id="infCard3" onclick="selInforme(3)">
+          <div class="inf-card-ico">💰</div>
+          <div class="inf-card-tit">Costos</div>
+          <div class="inf-card-sub">Total de materiales por OT y por período</div>
+        </div>
+        <div class="inf-card" id="infCard4" onclick="selInforme(4)">
+          <div class="inf-card-ico">📋</div>
+          <div class="inf-card-tit">Informe Completo</div>
+          <div class="inf-card-sub">Todos los informes en un solo PDF</div>
+        </div>
+      </div>
+      <button class="btn-gen" onclick="generarInforme()">
+        <span id="spinInf" style="display:none;width:18px;height:18px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;"></span>
+        📄 Generar y Descargar PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── INFORMES ─────────────────────────────────────────────────
+var informeSeleccionado = 4;
+
+function selInforme(n) {
+  informeSeleccionado = n;
+  [1,2,3,4].forEach(function(i) {
+    document.getElementById('infCard'+i).classList.toggle('inf-sel', i===n);
+  });
+}
+// Default: completo
+selInforme(4);
+
+function generarInforme() {
+  if(!datos.length){ showToast('⚠️ Primero actualiza los datos desde Google Sheet'); return; }
+  var spin = document.getElementById('spinInf');
+  spin.style.display = 'inline-block';
+  setTimeout(function() {
+    try {
+      var doc = new window.jspdf.jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+      var W=210, MG=15;
+      var NAVY='1A3C5E', ORAN='E87C1E', GRAY='F0F4F8', TGRAY='5A6478';
+      var fmt = function(n){ return '$'+Number(n||0).toLocaleString('es-CO'); };
+
+      function addHeader(doc, titulo) {
+        doc.setFillColor(26,60,94);
+        doc.rect(0,0,W,30,'F');
+        doc.setDrawColor(232,124,30); doc.setLineWidth(1.5);
+        doc.line(0,30,W,30);
+        doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(255,255,255);
+        doc.text('POSTEC DE OCCIDENTE S.A.S.',W/2,10,{align:'center'});
+        doc.setFontSize(11); doc.setFont('helvetica','normal'); doc.setTextColor(155,187,217);
+        doc.text('Gestión de Mantenimiento y Confiabilidad',W/2,16,{align:'center'});
+        doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(232,124,30);
+        doc.text(titulo,W/2,24,{align:'center'});
+        doc.setFontSize(8); doc.setFont('helvetica','italic'); doc.setTextColor(150,150,150);
+        doc.text('Generado: '+new Date().toLocaleString('es-CO'), W/2, 35, {align:'center'});
+        return 42;
+      }
+
+      function addFooter(doc, pg) {
+        doc.setFontSize(7); doc.setFont('helvetica','italic'); doc.setTextColor(150,150,150);
+        doc.text('POSTEC DE OCCIDENTE S.A.S. · Biblioteca de Materiales · Diseñada por Abdiel Cicar Moreno Velásquez', MG, 288);
+        doc.text('Página '+pg, W-MG, 288, {align:'right'});
+      }
+
+      function secTitle(doc, txt, y) {
+        doc.setFillColor(232,124,30);
+        doc.rect(MG, y, W-MG*2, 7, 'F');
+        doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(255,255,255);
+        doc.text(txt, MG+3, y+5);
+        return y+10;
+      }
+
+      var pg = 1;
+
+      // ── INFORME 1: MATERIALES ──
+      if(informeSeleccionado===1 || informeSeleccionado===4) {
+        var y = addHeader(doc, 'INFORME DE MATERIALES');
+        addFooter(doc, pg);
+
+        // KPIs
+        var uMats = new Set(datos.map(function(d){return d.desc;})).size;
+        var uOTs  = new Set(datos.map(function(d){return d.otNum;})).size;
+        var uEqs  = new Set(datos.map(function(d){return d.equipo;})).size;
+        var kpis = [['Materiales únicos',uMats],['OT registradas',uOTs],['Equipos',uEqs],['Fecha',new Date().toLocaleDateString('es-CO')]];
+        var kw = (W-MG*2)/4;
+        kpis.forEach(function(k,i){
+          var x = MG+i*kw;
+          doc.setFillColor(240,244,248); doc.rect(x,y,kw-2,16,'F');
+          doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(26,60,94);
+          doc.text(String(k[1]),x+kw/2-1,y+8,{align:'center'});
+          doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(90,100,120);
+          doc.text(k[0].toUpperCase(),x+kw/2-1,y+13,{align:'center'});
+        });
+        y+=20;
+
+        y = secTitle(doc,'LISTA COMPLETA DE MATERIALES', y);
+
+        // Table header
+        doc.setFillColor(26,60,94);
+        doc.rect(MG,y,W-MG*2,7,'F');
+        doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(255,255,255);
+        doc.text('Material',MG+2,y+5);
+        doc.text('Usos',MG+95,y+5,{align:'center'});
+        doc.text('UM',MG+115,y+5,{align:'center'});
+        doc.text('Precio unit.',MG+145,y+5,{align:'right'});
+        doc.text('Equipo(s)',MG+160,y+5);
+        y+=8;
+
+        // Build unique materials
+        var mapa={};
+        datos.forEach(function(d){
+          if(!d.desc)return;
+          var k=d.desc.toLowerCase().trim();
+          if(!mapa[k])mapa[k]={desc:d.desc,um:d.um||'Und',usos:0,equipos:new Set(),precio:Number(d.precio)||0};
+          mapa[k].usos++;
+          if(d.equipo)mapa[k].equipos.add(d.equipo);
+          if(!precios[k]&&Number(d.precio)>0)mapa[k].precio=Number(d.precio);
+          if(precios[k])mapa[k].precio=precios[k];
+        });
+        var items=Object.values(mapa).sort(function(a,b){return b.usos-a.usos;});
+
+        items.forEach(function(m,i){
+          if(y>270){doc.addPage();pg++;y=20;addFooter(doc,pg);}
+          var bg = i%2===0?[240,244,248]:[255,255,255];
+          doc.setFillColor(bg[0],bg[1],bg[2]);
+          doc.rect(MG,y,W-MG*2,6,'F');
+          doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(30,30,30);
+          var nom=m.desc.length>40?m.desc.slice(0,38)+'…':m.desc;
+          doc.text(nom,MG+2,y+4.5);
+          doc.text(String(m.usos),MG+95,y+4.5,{align:'center'});
+          doc.text(m.um||'Und',MG+115,y+4.5,{align:'center'});
+          doc.setTextColor(26,60,94); doc.setFont('helvetica','bold');
+          doc.text(m.precio>0?fmt(m.precio):'—',MG+145,y+4.5,{align:'right'});
+          doc.setTextColor(90,100,120); doc.setFont('helvetica','normal'); doc.setFontSize(7);
+          var eqs=[...m.equipos].join(', ');
+          if(eqs.length>20)eqs=eqs.slice(0,18)+'…';
+          doc.text(eqs,MG+148,y+4.5);
+          y+=6;
+        });
+      }
+
+      // ── INFORME 2: POR EQUIPO ──
+      if(informeSeleccionado===2 || informeSeleccionado===4) {
+        doc.addPage(); pg++;
+        var y2 = addHeader(doc,'INFORME POR EQUIPO');
+        addFooter(doc,pg);
+
+        var equipos={};
+        datos.forEach(function(d){
+          if(!d.equipo||!d.desc)return;
+          if(!equipos[d.equipo])equipos[d.equipo]={mats:{},ots:new Set()};
+          var k=d.desc.trim();
+          if(!equipos[d.equipo].mats[k])equipos[d.equipo].mats[k]={cant:0,um:d.um||'Und',precio:Number(d.precio)||0};
+          equipos[d.equipo].mats[k].cant+=Number(d.cant)||1;
+          if(d.otNum)equipos[d.equipo].ots.add(d.otNum);
+        });
+
+        Object.entries(equipos).sort().forEach(function(entry){
+          var equipo=entry[0], info=entry[1];
+          if(y2>250){doc.addPage();pg++;y2=20;addFooter(doc,pg);}
+          y2=secTitle(doc,equipo.toUpperCase()+' — '+info.ots.size+' OT(s)',y2);
+
+          doc.setFillColor(26,60,94);
+          doc.rect(MG,y2,W-MG*2,6,'F');
+          doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(255,255,255);
+          doc.text('Material',MG+2,y2+4.5);
+          doc.text('Cant. total',MG+110,y2+4.5,{align:'center'});
+          doc.text('UM',MG+135,y2+4.5,{align:'center'});
+          doc.text('Precio unit.',W-MG-2,y2+4.5,{align:'right'});
+          y2+=7;
+
+          Object.entries(info.mats).sort().forEach(function(me,i){
+            if(y2>275){doc.addPage();pg++;y2=20;addFooter(doc,pg);}
+            var bg=i%2===0?[240,244,248]:[255,255,255];
+            doc.setFillColor(bg[0],bg[1],bg[2]);
+            doc.rect(MG,y2,W-MG*2,6,'F');
+            doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(30,30,30);
+            var nom=me[0].length>45?me[0].slice(0,43)+'…':me[0];
+            doc.text(nom,MG+2,y2+4.5);
+            doc.text(String(me[1].cant),MG+110,y2+4.5,{align:'center'});
+            doc.text(me[1].um,MG+135,y2+4.5,{align:'center'});
+            doc.setTextColor(26,60,94); doc.setFont('helvetica','bold');
+            doc.text(me[1].precio>0?fmt(me[1].precio):'—',W-MG-2,y2+4.5,{align:'right'});
+            y2+=6;
+          });
+          y2+=6;
+        });
+      }
+
+      // ── INFORME 3: COSTOS ──
+      if(informeSeleccionado===3 || informeSeleccionado===4) {
+        doc.addPage(); pg++;
+        var y3 = addHeader(doc,'INFORME DE COSTOS');
+        addFooter(doc,pg);
+
+        var otMap={};
+        datos.forEach(function(d){
+          if(!d.otNum||!d.desc)return;
+          if(!otMap[d.otNum])otMap[d.otNum]={fecha:String(d.fecha).slice(0,10),equipo:d.equipo,mecanico:d.mecanico,total:0,items:[]};
+          var p=precios[d.desc.toLowerCase().trim()]||Number(d.precio)||0;
+          var sub=p*(Number(d.cant)||1);
+          otMap[d.otNum].total+=sub;
+          otMap[d.otNum].items.push({desc:d.desc,cant:Number(d.cant)||1,um:d.um||'Und',precio:p,sub:sub});
+        });
+
+        var totalGeneral=0;
+        y3=secTitle(doc,'COSTOS POR ORDEN DE TRABAJO',y3);
+
+        doc.setFillColor(26,60,94);
+        doc.rect(MG,y3,W-MG*2,6,'F');
+        doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(255,255,255);
+        doc.text('N° OT',MG+2,y3+4.5);
+        doc.text('Fecha',MG+35,y3+4.5);
+        doc.text('Equipo',MG+65,y3+4.5);
+        doc.text('Mecánico',MG+105,y3+4.5);
+        doc.text('Total materiales',W-MG-2,y3+4.5,{align:'right'});
+        y3+=7;
+
+        Object.entries(otMap).sort().forEach(function(ot,i){
+          if(y3>275){doc.addPage();pg++;y3=20;addFooter(doc,pg);}
+          var bg=i%2===0?[240,244,248]:[255,255,255];
+          doc.setFillColor(bg[0],bg[1],bg[2]);
+          doc.rect(MG,y3,W-MG*2,6,'F');
+          doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(30,30,30);
+          doc.text(String(ot[0]).slice(0,14),MG+2,y3+4.5);
+          doc.text(ot[1].fecha,MG+35,y3+4.5);
+          var eq=ot[1].equipo||'—'; if(eq.length>15)eq=eq.slice(0,13)+'…';
+          doc.text(eq,MG+65,y3+4.5);
+          var mec=ot[1].mecanico||'—'; if(mec.length>20)mec=mec.slice(0,18)+'…';
+          doc.text(mec,MG+105,y3+4.5);
+          doc.setFont('helvetica','bold'); doc.setTextColor(26,60,94);
+          doc.text(ot[1].total>0?fmt(ot[1].total):'Sin precio',W-MG-2,y3+4.5,{align:'right'});
+          totalGeneral+=ot[1].total;
+          y3+=6;
+        });
+
+        // Total general
+        y3+=4;
+        doc.setFillColor(26,60,94); doc.rect(MG,y3,W-MG*2,8,'F');
+        doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(255,255,255);
+        doc.text('TOTAL GENERAL',MG+3,y3+5.5);
+        doc.setTextColor(232,124,30);
+        doc.text(fmt(totalGeneral),W-MG-2,y3+5.5,{align:'right'});
+      }
+
+      // ── GUARDAR ──
+      var tipo = ['','Materiales','Por-Equipo','Costos','Completo'][informeSeleccionado];
+      var nombre = 'POSTECSA_Informe_'+tipo+'_'+new Date().toISOString().slice(0,10)+'.pdf';
+      doc.save(nombre);
+      showToast('✅ Informe generado: '+nombre);
+    } catch(e) {
+      showToast('❌ Error: '+e.message);
+    }
+    spin.style.display='none';
+  }, 100);
+}
+</script>
+
+</body>
+</html>
